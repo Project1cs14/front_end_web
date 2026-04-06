@@ -8,7 +8,7 @@ import InputField from "./InputField";
 // POST /auth/resetpassword  →  { email, password, confirm_password }
 // Success (200): { message: "Mot de passe réinitialisé avec succès." }
 async function sendResetPassword({ email, password, confirm_password }) {
-  const res = await fetch("https://back-end-sawu.onrender.com/auth/resetpassword", {
+  const res = await fetch("https://back-end-sawu.onrender.com/auth/web/resetpassword", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, confirm_password }),
