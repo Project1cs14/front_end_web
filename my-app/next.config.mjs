@@ -1,3 +1,5 @@
+// Next.js configuration file (next.config.mjs) using ES Modules syntax
+//to configure the root directory for Next.js when running in development mode, ensuring it uses the correct project folder. This is especially useful when working with monorepos or custom project structures.
 /** @type {import('next').NextConfig} */
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';

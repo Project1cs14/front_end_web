@@ -52,21 +52,6 @@ const SignOutIcon = () => (
   </svg>
 );
 
-const ChevronDownIcon = ({ open }) => (
-  <svg 
-    width="16" 
-    height="16" 
-    viewBox="0 0 24 24" 
-    fill="none" 
-    stroke="currentColor" 
-    strokeWidth="2.5" 
-    strokeLinecap="round" 
-    strokeLinejoin="round"
-    className={`transition-transform duration-300 ${open ? "rotate-180" : "rotate-0"}`}
-  >
-    <polyline points="6 9 12 15 18 9" />
-  </svg>
-);
 
 const MenuIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -150,50 +135,7 @@ function SidebarContent({ onClose }) {
       <nav className="flex-1 flex flex-col gap-5">
 
         {navLink("/admin/Dashboard", <HomeIcon />, "General")}
-
-        {/* Users dropdown */}
-        <div className="flex flex-col gap-1">
-          <button
-            onClick={() => setUsersOpen(!usersOpen)}
-            className="w-full flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium text-[#4a4a6a] hover:bg-[#f0f0f8] hover:text-[#1a1a3e] transition-all duration-200"
-          >
-            <div className="text-[#7a7a9e]">
-              <UsersIcon />
-            </div>
-            <span className="flex-1 text-left">All Users</span>
-            <ChevronDownIcon open={usersOpen} />
-          </button>
-
-          {usersOpen && (
-            <div className="pl-6 flex flex-col gap-1 animate-in fade-in duration-200">
-              
-              <Link
-                href="/admin/users/users"
-                onClick={onClose}
-                className={`px-3.5 py-2 rounded-md text-sm transition-all duration-200 
-                  ${isActive("/admin/users/users") 
-                    ? "bg-[#f0f0f8] text-[#1a1a3e] font-semibold" 
-                    : "text-[#4a4a6a] hover:bg-[#f0f0f8]"
-                  }`}
-              >
-                Users
-              </Link>
-
-              <Link
-                href="/admin/users/associations"
-                onClick={onClose}
-                className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 
-                  ${isActive("/admin/users/associations") 
-                    ? "bg-[#001f5c] text-white shadow-sm" 
-                    : "text-[#4a4a6a] hover:bg-[#f0f0f8]"
-                  }`}
-              >
-                Associations
-              </Link>
-            </div>
-          )}
-        </div>
-
+        {navLink("/admin/admins", <UsersIcon />, "Admins")}
         {navLink("/admin/reports", <ReportsIcon />, "Reports")}
         {navLink("/admin/analytics", <AnalyticsIcon />, "Analytics")}
         {navLink("/admin/settings", <SettingsIcon />, "Settings")}

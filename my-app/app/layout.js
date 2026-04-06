@@ -10,12 +10,15 @@ const albertSans = Albert_Sans({
 export const metadata = {
   title: "ZeroWaste",
   description: "ZeroWaste Admin Dashboard",
+  icons:{
+    icon: "/adminlogo.svg",
+  }
 };
 
 export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body className={`${albertSans.variable} font-[family-name:var(--font-albert-sans)] antialiased`}>
+      <body className={`${albertSans.variable} font-(family-name:--font-albert-sans) antialiased`}>
         {children}
       </body>
     </html>

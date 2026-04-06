@@ -1,3 +1,4 @@
+//to configure path aliases for eslint and next.js
 {
   "compilerOptions": {
     "paths": {
