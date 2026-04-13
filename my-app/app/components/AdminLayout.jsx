@@ -1,8 +1,8 @@
-import Sidebar from "./Sidebar";
-export default function UserLayout({ children }) {
+import Sidebar from "./Admin_Sidebar";
+export default function AdminLayout({ children }) {
   return (
     <div className="min-h-screen bg-[#f5f5f0]">
-      <Sidebar/>
+      <Sidebar />
 
       {/*
         Desktop: push content right by sidebar width (ml-60)

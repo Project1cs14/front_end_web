@@ -9,7 +9,7 @@ import SocialLoginButtons from "./SocialLoginButtons";
 // POST /auth/login  →  { email, password }
 // Success (200): { message, user: { id, name, email, role }, accessToken, refreshToken }
 async function loginUser({ email, password }) {
-  const res = await fetch("https://back-end-sawu.onrender.com/auth/login", {
+  const res = await fetch("https://back-end-sawu.onrender.com/auth/web/login", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password }),

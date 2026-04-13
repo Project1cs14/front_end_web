@@ -1,8 +1,8 @@
-import Sidebar from "./Sidebar";
+import Sidebar3 from "./Sidebar3";
 export default function MaireLayout({ children }) {
   return (
     <div className="min-h-screen bg-[#f5f5f0]">
-      <Sidebar />
+      <Sidebar3 />
 
       {/*
         Desktop: push content right by sidebar width (ml-60)

@@ -7,7 +7,7 @@ import InputField from "./InputField";
 // POST /auth/forgotpassword  →  { email }
 // Success: { message: "Un code de vérification a été envoyé à votre email." }
 async function sendForgotPassword(email) {
-  const res = await fetch(" https://back-end-sawu.onrender.com/auth/web/forgotpassword", {
+  const res = await fetch("https://back-end-sawu.onrender.com/auth/web/forgotpassword", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email }),

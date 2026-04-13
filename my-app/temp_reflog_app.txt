@@ -1,0 +1,14 @@
+65bf8b8 HEAD@{0}: checkout: moving from zineddine_branch to recover_zineddine
+65bf8b8 HEAD@{1}: checkout: moving from main to zineddine_branch
+7e618b4 HEAD@{2}: merge origin/marwa_branch: Merge made by the 'ort' strategy.
+c9cc969 HEAD@{3}: reset: moving to origin/main
+0e0954f HEAD@{4}: reset: moving to HEAD
+0e0954f HEAD@{5}: checkout: moving from zineddine_branch to main
+65bf8b8 HEAD@{6}: commit: Update frontend admin routes and components
+808496b HEAD@{7}: checkout: moving from main to zineddine_branch
+0e0954f HEAD@{8}: commit: adding the sec admin
+8416c06 HEAD@{9}: pull origin marwa_branch: Fast-forward
+808496b HEAD@{10}: reset: moving to HEAD
+808496b HEAD@{11}: checkout: moving from zineddine_branch to main
+808496b HEAD@{12}: commit: first sprint completed
+ed03a70 HEAD@{13}: commit (initial): hello

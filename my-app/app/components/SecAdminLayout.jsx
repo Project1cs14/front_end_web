@@ -2,7 +2,7 @@ import Sidebar2 from "./Sidebar2";
 export default function SecAdminLayout({ children }) {
   return (
     <div className="min-h-screen bg-[#f5f5f0]">
-      <Sidebar2/>
+      <Sidebar2 />
 
       {/*
         Desktop: push content right by sidebar width (ml-60)

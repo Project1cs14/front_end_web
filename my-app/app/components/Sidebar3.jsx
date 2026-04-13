@@ -146,7 +146,7 @@ function SidebarContent({ onClose }) {
       {/* Navigation */}
       <nav className="flex-1 flex flex-col gap-5">
 
-        {navLink("/secadmin/Dashboard", <HomeIcon />, "General")}
+        {navLink("/maire/Dashboard", <HomeIcon />, "General")}
 
         {/* Users dropdown */}
         <div className="flex flex-col gap-1">
@@ -165,10 +165,10 @@ function SidebarContent({ onClose }) {
             <div className="pl-6 flex flex-col gap-1 animate-in fade-in duration-200">
               
               <Link
-                href="/secadmin/users/users"
+                href="/maire/users"
                 onClick={onClose}
                 className={`px-3.5 py-2 rounded-md text-sm transition-all duration-200 
-                  ${isActive("/admin/users/users") || isActive("/secadmin/users/users")
+                  ${isActive("/maire/users") || isActive("/maire/users")
                     ? "bg-[#f0f0f8] text-[#1a1a3e] font-semibold" 
                     : "text-[#4a4a6a] hover:bg-[#f0f0f8]"
                   }`}
@@ -177,7 +177,7 @@ function SidebarContent({ onClose }) {
               </Link>
 
               <Link
-                href="/secadmin/users/associations"
+                href="/maire/associations"
                 onClick={onClose}
                 className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 
                   ${isActive("/admin/users/associations") || isActive("/secadmin/users/associations")
@@ -187,24 +187,14 @@ function SidebarContent({ onClose }) {
               >
                 Associations
               </Link>
-              <Link
-                href="/secadmin/users/creationmaire"
-                onClick={onClose}
-                className={`px-3.5 py-2 rounded-lg text-sm font-semibold transition-all duration-200 
-                  ${isActive("/secadmin/users/creationmaire") 
-                    ? "bg-[#001f5c] text-white shadow-sm" 
-                    : "text-[#4a4a6a] hover:bg-[#f0f0f8]"
-                  }`}
-              >
-                create Maire
-              </Link>
+
             </div>
           )}
         </div>
 
-        {navLink("/secadmin/reports", <ReportsIcon />, "Reports")}
-        {navLink("/secadmin/analytics", <AnalyticsIcon />, "Analytics")}
-        {navLink("/secadmin/settings", <SettingsIcon />, "Settings")}
+        {navLink("/maire/reports", <ReportsIcon />, "Reports")}
+        {navLink("/maire/analytics", <AnalyticsIcon />, "Analytics")}
+        {navLink("/maire/settings", <SettingsIcon />, "Settings")}
       </nav>
 
       {/* Sign Out */}
@@ -222,7 +212,7 @@ function SidebarContent({ onClose }) {
 }
 
 /* ── Main export ── */
-export default function Sidebar2() {
+export default function Sidebar3() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   return (

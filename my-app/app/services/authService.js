@@ -2,7 +2,7 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:3000';
 
 export async function loginUser(email, password) {
-  const response = await fetch(`${API_BASE_URL}/auth/login`, {
+  const response = await fetch(`${API_BASE_URL}/auth/web/login`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ export async function registerAssociation(associationData) {
 }
 
 export async function forgotPassword(email) {
-  const response = await fetch(`${API_BASE_URL}/auth/forgotpassword`, {
+  const response = await fetch(`${API_BASE_URL}/auth/web/forgotpassword`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -111,7 +111,7 @@ export async function verifyOtp(email, otp) {
 }
 
 export async function resetPassword(email, otp, newPassword) {
-  const response = await fetch(`${API_BASE_URL}/auth/resetpassword`, {
+  const response = await fetch(`${API_BASE_URL}/auth/web/resetpassword`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -130,7 +130,7 @@ export async function resetPassword(email, otp, newPassword) {
 
 export async function changePassword(oldPassword, newPassword) {
   const token = localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
-  const response = await fetch(`${API_BASE_URL}/auth/changepassword`, {
+  const response = await fetch(`${API_BASE_URL}/auth/web/changepassword`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

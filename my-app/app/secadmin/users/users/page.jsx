@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import SecAdminLayout from "@/app/components/SecAdminLayout";
+import Image from "next/image";
 
 const BASE_URL = "https://back-end-sawu.onrender.com";
 
@@ -83,56 +83,6 @@ function ConfirmModal({ title, message, confirmText, cancelText, onConfirm, onCa
               onMouseLeave={(e) => { e.target.style.opacity = "1"; }}
             >
               {loading ? "Processing..." : confirmText}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Suspend Modal ────────────────────────────────────────────────────────
-function SuspendModal({ user, onConfirm, onCancel, loading }) {
-  const [reason, setReason] = useState("");
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 150, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.12)", overflow: "hidden" }}>
-        <div style={{ padding: "24px" }}>
-          <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-            <div style={{ width: 48, height: 48, borderRadius: "50%", background: "#fef2f2", display: "flex", alignItems: "center", justifyContent: "center", color: "#dc2626" }}>
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M6 9l12 0M9 5h6M10 14h4M8 19h8a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z" />
-              </svg>
-            </div>
-          </div>
-          
-          <h3 style={{ fontSize: 18, fontWeight: 600, color: "#1f2937", margin: "0 0 8px 0", textAlign: "center" }}>Suspend Account</h3>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px 0", lineHeight: 1.6, textAlign: "center" }}>
-            Please provide a reason for suspending {user?.first_name || user?.name}'s account. This reason will be sent to them.
-          </p>
-
-          <textarea
-            value={reason}
-            onChange={(e) => setReason(e.target.value)}
-            placeholder="Reason for suspension..."
-            rows={4}
-            style={{ width: "100%", padding: "12px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, color: "#1f2937", fontFamily: "system-ui", outline: "none", resize: "none", marginBottom: 8 }}
-          />
-
-          <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-            <button
-              onClick={onCancel}
-              disabled={loading}
-              style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "1px solid #d1d5db", background: "#fff", color: "#6b7280", fontSize: 13, fontWeight: 600, cursor: loading ? "not-allowed" : "pointer" }}
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => onConfirm(reason)}
-              disabled={loading || !reason.trim()}
-              style={{ flex: 1, padding: "10px 0", borderRadius: 8, border: "none", background: "#dc2626", color: "#fff", fontSize: 13, fontWeight: 600, cursor: loading || !reason.trim() ? "not-allowed" : "pointer", opacity: loading || !reason.trim() ? 0.6 : 1 }}
-            >
-              {loading ? "Suspending..." : "Suspend Account"}
             </button>
           </div>
         </div>
@@ -765,7 +715,16 @@ export default function UsersPage() {
     setConfirmModal({
       type: "suspend",
       userId,
-      user
+      title: "Suspend User Account",
+      message: `Are you sure you want to suspend ${user?.first_name || user?.name}? They will be unable to access their account until reactivated.`,
+      confirmText: "Suspend Account",
+      cancelText: "Cancel",
+      isDanger: true,
+      icon: (
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M6 9l12 0M9 5h6M10 14h4M8 19h8a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z" />
+        </svg>
+      ),
     });
   };
 
@@ -808,7 +767,7 @@ export default function UsersPage() {
     });
   };
 
-  const executeConfirmAction = async (reason = "") => {
+  const executeConfirmAction = async () => {
     if (!confirmModal) return;
 
     const token = getToken();
@@ -821,11 +780,9 @@ export default function UsersPage() {
     try {
       let endpoint = "";
       let method = "PATCH";
-      let bodyData = null;
 
       if (confirmModal.type === "suspend") {
         endpoint = `${BASE_URL}/admin/deactivate/${confirmModal.userId}`;
-        bodyData = { reason };
       } else if (confirmModal.type === "resume") {
         endpoint = `${BASE_URL}/admin/activate/${confirmModal.userId}`;
       } else if (confirmModal.type === "delete") {
@@ -835,17 +792,14 @@ export default function UsersPage() {
 
       console.log(`Making ${method} request to: ${endpoint}`);
 
-      const fetchOptions = {
+      const res = await fetch(endpoint, {
         method,
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
         },
-      };
-
-      if (bodyData) fetchOptions.body = JSON.stringify(bodyData);
-
-      const res = await fetch(endpoint, fetchOptions);
+        body: confirmModal.type === "suspend" ? JSON.stringify({ reason: "Account suspended by administrator" }) : null,
+      });
 
       console.log(`Response status: ${res.status}`);
       
@@ -962,14 +916,7 @@ export default function UsersPage() {
 
       <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", width: "100%", maxWidth: isDesktop ? 1200 : "100%" }}>
 
-        {confirmModal && confirmModal.type === "suspend" ? (
-          <SuspendModal
-            user={confirmModal.user}
-            onConfirm={(reason) => executeConfirmAction(reason)}
-            onCancel={() => setConfirmModal(null)}
-            loading={actionLoading === confirmModal.userId}
-          />
-        ) : confirmModal && (
+        {confirmModal && (
           <ConfirmModal
             title={confirmModal.title}
             message={confirmModal.message}
@@ -978,7 +925,7 @@ export default function UsersPage() {
             isDanger={confirmModal.isDanger}
             loading={actionLoading === confirmModal.userId}
             icon={confirmModal.icon}
-            onConfirm={() => executeConfirmAction()}
+            onConfirm={executeConfirmAction}
             onCancel={() => setConfirmModal(null)}
           />
         )}

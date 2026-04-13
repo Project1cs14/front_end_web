@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import AdminLayout from "@/app/components/AdminLayout";
 import Image from "next/image";
+import MaireLayout from "@/app/components/MaireLayout";
 
 const BASE_URL = "https://back-end-sawu.onrender.com";
 
@@ -86,39 +86,6 @@ function RejectModal({ association, onConfirm, onCancel, loading }) {
             <button onClick={() => onConfirm(reason)} disabled={!reason.trim() || loading}
               style={{ flex:1, padding:"10px 0", borderRadius:8, border:"none", background: !reason.trim() || loading ? "#d1d5db" : "#ef4444", color:"#fff", fontSize:13, fontWeight:600, fontFamily:"system-ui", cursor:!reason.trim()||loading?"not-allowed":"pointer" }}>
               {loading ? "Processing…" : "Confirm"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ── Delete Modal ──────────────────────────────────────────────────────────
-function DeleteModal({ association, onConfirm, onCancel, loading }) {
-  return (
-    <div style={{ position:"fixed", inset:0, zIndex:150, display:"flex", alignItems:"center", justifyContent:"center", padding:16, background:"rgba(0,0,0,0.5)", backdropFilter:"blur(4px)" }}>
-      <div style={{ background:"#fff", border:"1px solid #e5e7eb", borderRadius:12, width:"100%", maxWidth:420, boxShadow:"0 20px 60px rgba(0,0,0,0.12)", overflow:"hidden" }}>
-        <div style={{ padding:"24px", textAlign:"center" }}>
-          <div style={{ width:48, height:48, borderRadius:"50%", background:"#fef2f2", display:"flex", alignItems:"center", justifyContent:"center", color:"#dc2626", margin:"0 auto 16px auto" }}>
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-          </div>
-          <h3 style={{ fontSize:18, fontWeight:600, color:"#1f2937", margin:"0 0 8px 0" }}>Delete Association</h3>
-          <p style={{ fontSize:13, color:"#6b7280", margin:"0 0 24px 0", lineHeight:1.6 }}>Are you sure you want to permanently delete <strong>{association?.nom_association}</strong>? This action cannot be undone.</p>
-
-          <div style={{ display:"flex", gap:12 }}>
-            <button onClick={onCancel} disabled={loading}
-              style={{ flex:1, padding:"10px 0", borderRadius:8, border:"1px solid #d1d5db", background:"#fff", color:"#6b7280", fontSize:13, fontWeight:600, fontFamily:"system-ui", cursor:loading?"not-allowed":"pointer", transition:"all .2s" }}
-              onMouseEnter={(e) => { e.target.style.background = "#f3f4f6"; }}
-              onMouseLeave={(e) => { e.target.style.background = "#fff"; }}>
-              Cancel
-            </button>
-            <button onClick={() => onConfirm(association)} disabled={loading}
-              style={{ flex:1, padding:"10px 0", borderRadius:8, border:"none", background: "#ef4444", color:"#fff", fontSize:13, fontWeight:600, fontFamily:"system-ui", opacity:loading?0.6:1, cursor:loading?"not-allowed":"pointer" }}>
-              {loading ? "Deleting…" : "Delete Permanently"}
             </button>
           </div>
         </div>
@@ -296,7 +263,7 @@ function DetailDrawer({ assoc, onClose, onApprove, onReject, actionLoading, isMo
 }
 
 // ── Mobile Card ───────────────────────────────────────────────────────────
-function MobileCard({ assoc, isPending, onView, onDelete, onReject, onApprove, actionLoading }) {
+function MobileCard({ assoc, isPending, onView, onReject, onApprove, actionLoading }) {
   const isRowLoading = actionLoading === assoc.id;
   const zones = parseZones(assoc.zones_intervention);
 
@@ -355,7 +322,7 @@ function MobileCard({ assoc, isPending, onView, onDelete, onReject, onApprove, a
             </button>
           </>
         ) : (
-          <button onClick={() => onDelete(assoc)}
+          <button onClick={() => onView(assoc)}
             style={{ flex:1, padding:"8px 0", borderRadius:8, border:"1px solid #fecaca", background:"#fef2f2", color:"#dc2626", fontSize:11, fontWeight:600, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", gap:2 }}>
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
             Delete
@@ -367,7 +334,7 @@ function MobileCard({ assoc, isPending, onView, onDelete, onReject, onApprove, a
 }
 
 // ── Desktop Table Row ──────────────────────────────────────────────────────
-function TableRow({ assoc, isPending, onView, onDelete, onReject, onApprove, actionLoading }) {
+function TableRow({ assoc, isPending, onView, onReject, onApprove, actionLoading }) {
   const isRowLoading = actionLoading === assoc.id;
 
   return (
@@ -417,7 +384,7 @@ function TableRow({ assoc, isPending, onView, onDelete, onReject, onApprove, act
               </button>
             </>
           ) : (
-            <button onClick={() => onDelete(assoc)}
+            <button onClick={() => onView(assoc)}
               style={{ width:32, height:32, borderRadius:6, border:"1px solid #fecaca", background:"#fef2f2", color:"#dc2626", display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer", transition:"all .2s" }}
               title="Delete">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -444,8 +411,6 @@ export default function PendingAssociationsPage() {
   const [actionLoading, setActionLoading] = useState(null);
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectLoading, setRejectLoading] = useState(false);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
   const [detailTarget, setDetailTarget] = useState(null);
   const [toast, setToast] = useState(null);
   const [windowWidth, setWindowWidth] = useState(
@@ -536,22 +501,6 @@ export default function PendingAssociationsPage() {
     finally { setRejectLoading(false); }
   };
 
-  const handleDeleteConfirm = async (assoc) => {
-    const token = getToken(); if (!token || !deleteTarget) return;
-    setDeleteLoading(true);
-    try {
-      const res = await fetch(`${BASE_URL}/admin/associations/${assoc.id}`, {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) throw new Error();
-      setApproved((prev) => prev.filter((a) => a.id !== assoc.id));
-      showToast("Association deleted successfully.", "success");
-      setDeleteTarget(null);
-    } catch { showToast("Failed to delete association.", "error"); }
-    finally { setDeleteLoading(false); }
-  };
-
   const filteredList = currentList
     .filter((a) => {
       if (!search.trim()) return true;
@@ -567,7 +516,7 @@ export default function PendingAssociationsPage() {
     });
 
   return (
-    <AdminLayout>
+    <MaireLayout>
       <style>{`
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -597,10 +546,6 @@ export default function PendingAssociationsPage() {
               : <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>}
             {toast.message}
           </div>
-        )}
-
-        {deleteTarget && (
-          <DeleteModal association={deleteTarget} onConfirm={handleDeleteConfirm} onCancel={() => setDeleteTarget(null)} loading={deleteLoading} />
         )}
 
         {rejectTarget && (
@@ -775,7 +720,7 @@ export default function PendingAssociationsPage() {
                 )}
 
                 {!loading && !error && filteredList.map((assoc) => (
-                  <TableRow key={assoc.id} assoc={assoc} isPending={activeTab === "pending"} onView={(a) => setDetailTarget(a)} onDelete={(a) => setDeleteTarget(a)} onReject={(a) => setRejectTarget(a)} onApprove={handleApprove} actionLoading={actionLoading} />
+                  <TableRow key={assoc.id} assoc={assoc} isPending={activeTab === "pending"} onView={(a) => setDetailTarget(a)} onReject={(a) => setRejectTarget(a)} onApprove={handleApprove} actionLoading={actionLoading} />
                 ))}
               </tbody>
             </table>
@@ -805,7 +750,7 @@ export default function PendingAssociationsPage() {
             ))}
 
             {!loading && !error && filteredList.map((assoc) => (
-              <MobileCard key={assoc.id} assoc={assoc} isPending={activeTab === "pending"} onView={(a) => setDetailTarget(a)} onDelete={(a) => setDeleteTarget(a)} onReject={(a) => setRejectTarget(a)} onApprove={handleApprove} actionLoading={actionLoading} />
+              <MobileCard key={assoc.id} assoc={assoc} isPending={activeTab === "pending"} onView={(a) => setDetailTarget(a)} onReject={(a) => setRejectTarget(a)} onApprove={handleApprove} actionLoading={actionLoading} />
             ))}
 
             {!loading && !error && filteredList.length === 0 && (
@@ -829,6 +774,6 @@ export default function PendingAssociationsPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </MaireLayout>
   );
 }

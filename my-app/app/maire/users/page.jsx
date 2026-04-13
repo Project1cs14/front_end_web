@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import AdminLayout from "@/app/components/AdminLayout";
+import MaireLayout from "@/app/components/MaireLayout";
 import Image from "next/image";
 
 const BASE_URL = "https://back-end-sawu.onrender.com";
@@ -902,7 +902,7 @@ export default function UsersPage() {
   );
 
   return (
-    <AdminLayout>
+    <MaireLayout>
       <style>{`
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -1443,6 +1443,6 @@ export default function UsersPage() {
           </div>
         )}
       </div>
-    </AdminLayout>
+    </MaireLayout>
   );
 }

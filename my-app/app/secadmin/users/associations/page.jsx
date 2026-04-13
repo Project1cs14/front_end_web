@@ -622,12 +622,6 @@ export default function PendingAssociationsPage() {
               display:"flex", alignItems:"center", gap:8
             }}>
             Approved Associations
-            <span style={{
-              display:"flex", alignItems:"center", justifyContent:"center",
-              width:20, height:20, borderRadius:"50%",
-              background:"#10b981", color:"#fff",
-              fontSize:11, fontWeight:700
-            }}>{approved.length}</span>
           </button>
         </div>
 
