@@ -44,6 +44,22 @@ const SettingsIcon = () => (
   </svg>
 );
 
+const ConfigurationIcon = () => (
+  <svg
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <circle cx="12" cy="12" r="3" />
+    <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+  </svg>
+);
+
 const SignOutIcon = () => (
   <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
     <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
@@ -52,6 +68,15 @@ const SignOutIcon = () => (
   </svg>
 );
 
+const ChevronIcon = ({ open }) => (
+  <svg
+    width="16" height="16" viewBox="0 0 24 24" fill="none"
+    stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"
+    className={"transition-transform duration-200 " + (open ? "rotate-180" : "")}
+  >
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
 
 const MenuIcon = () => (
   <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -68,34 +93,95 @@ const CloseIcon = () => (
   </svg>
 );
 
+/* ── Reusable nav link ── */
+function NavLink({ href, icon, label, onClick }) {
+  const pathname = usePathname();
+  const active = pathname === href;
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={
+        "flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200 " +
+        (active
+          ? "bg-[#001f5c] text-white shadow-sm"
+          : "text-[#4a4a6a] hover:bg-[#f0f0f8] hover:text-[#1a1a3e]")
+      }
+    >
+      <span className={active ? "text-white" : "text-[#7a7a9e]"}>{icon}</span>
+      <span className="flex-1">{label}</span>
+    </Link>
+  );
+}
 
+/* ── Dropdown group ── */
+function NavGroup({ icon, label, children, defaultOpen = false }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div>
+      <button
+        onClick={() => setOpen(!open)}
+        className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-sm font-medium text-[#4a4a6a] hover:bg-[#f0f0f8] hover:text-[#1a1a3e] transition-all duration-200"
+      >
+        <span className="text-[#7a7a9e]">{icon}</span>
+        <span className="flex-1 text-left">{label}</span>
+        <span className="text-[#7a7a9e]">
+          <ChevronIcon open={open} />
+        </span>
+      </button>
+      <div
+        className="overflow-hidden transition-all duration-200"
+        style={{ maxHeight: open ? "300px" : "0px" }}
+      >
+        <div className="mt-0.5 ml-3 pl-4 border-l border-[#e8e8f0] space-y-0.5 py-1">
+          {children}
+        </div>
+      </div>
+    </div>
+  );
+}
 
-/* ── Sidebar inner content (shared between desktop & mobile) ── */
+/* ── Sub-link inside a group ── */
+function SubLink({ href, label, onClick }) {
+  const pathname = usePathname();
+  const active = pathname === href;
+  return (
+    <Link
+      href={href}
+      onClick={onClick}
+      className={
+        "flex items-center gap-2 px-3 py-2 rounded-lg text-sm transition-all duration-200 " +
+        (active
+          ? "bg-[#001f5c] text-white font-medium shadow-sm"
+          : "text-[#4a4a6a] hover:bg-[#f0f0f8] hover:text-[#1a1a3e]")
+      }
+    >
+      <span
+        className={
+          "w-1.5 h-1.5 rounded-full shrink-0 " +
+          (active ? "bg-white" : "bg-[#c0c0d8]")
+        }
+      />
+      {label}
+    </Link>
+  );
+}
+
+/* ── Section label ── */
+const SectionLabel = ({ children }) => (
+  <p className="text-[10px] font-semibold text-[#9a9ab8] uppercase tracking-widest px-4 pt-2 pb-1">
+    {children}
+  </p>
+);
+
+/* ── Sidebar content (shared desktop + mobile) ── */
 function SidebarContent({ onClose }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [usersOpen, setUsersOpen] = useState(true);
 
-  const isActive = (path) => pathname === path;
-
-  const navLink = (href, icon, label, badge = null) => (
-    <Link
-      href={href}
-      onClick={onClose}
-      className={`flex items-center gap-3 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
-        ${isActive(href) 
-          ? "bg-[#001f5c] text-white shadow-sm" 
-          : "text-[#4a4a6a] hover:bg-[#f0f0f8] hover:text-[#1a1a3e]"
-        }`}
-    >
-      <div className={`${isActive(href) ? "text-white" : "text-[#7a7a9e]"}`}>
-        {icon}
-      </div>
-      <span className="flex-1">{label}</span>
-      
-    </Link>
-  );
-
+  const managementPaths = ["/admin/management/admins", "/admin/management/users", "/admin/management/associations","/admin/management/mayors"];
+  const contentPaths = ["/admin/Content/reports", "/admin/Content/donations"];
+  const configPaths = ["/admin/Configuration/Categories"];
   const handleLogout = async () => {
     try {
       await fetch("https://back-end-sawu.onrender.com/auth/logout", {
@@ -107,53 +193,83 @@ function SidebarContent({ onClose }) {
     } catch (error) {
       console.error("Logout error:", error);
     }
-
     localStorage.removeItem("accessToken");
     localStorage.removeItem("refreshToken");
     localStorage.removeItem("user");
     sessionStorage.removeItem("accessToken");
     sessionStorage.removeItem("refreshToken");
     sessionStorage.removeItem("user");
-
     router.push("/LoginScreen");
   };
 
   return (
-    <div className="flex flex-col h-full bg-[#f8f8fc] px-4 py-6">
+    <div className="flex flex-col h-full bg-[#f8f8fc] px-3 py-6">
 
       {/* Logo */}
-      <div className="flex items-center justify-center flex-col mb-10 mt-05">
-      <Image
-          alt="ZeroWaste Logo"
-          src="../../adminlogo.svg"
-          width={100}
-          height={100} />
-     
+      <div className="flex items-center justify-center flex-col mb-8">
+        <Image alt="ZeroWaste Logo" src="../../adminlogo.svg" width={100} height={100} />
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 flex flex-col gap-5">
+      <nav className="flex-1 flex flex-col gap-1 overflow-y-auto">
 
-        {navLink("/admin/Dashboard", <HomeIcon />, "General")}
-        {navLink("/admin/admins", <UsersIcon />, "Admins")}
-        {navLink("/admin/users/users", <UsersIcon />, "Users")}
-        {navLink("/admin/users/associations", <ReportsIcon />, "Associations")}
-        {navLink("/admin/reports", <ReportsIcon />, "Reports")}
-        {navLink("/admin/analytics", <AnalyticsIcon />, "Analytics")}
-        {navLink("/admin/settings", <SettingsIcon />, "Settings")}
-      {/* Sign Out */}
-      <button
-        onClick={handleLogout}
-        className="flex items-center gap-3 px-4 mt-20 py-2.5 rounded-lg text-sm font-medium text-[#4a4a6a] hover:bg-[#f0f0f8] hover:text-[#1a1a3e] transition-all duration-200 w-full"
-      >
-        <div className="text-[#7a7a9e]">
-          <SignOutIcon />
+        {/* Dashboard */}
+        <NavLink href="/admin/Dashboard" icon={<HomeIcon />} label="Dashboard" onClick={onClose} />
+
+        {/* Management */}
+        <SectionLabel>Management</SectionLabel>
+        <NavGroup
+          label="Management"
+          defaultOpen={managementPaths.some((p) => pathname === p)}
+          icon={<UsersIcon />}
+        >
+          <SubLink href="/admin/management/admins"            label="Admins"       onClick={onClose} />
+          <SubLink href="/admin/management/users"             label="Users"        onClick={onClose} />
+          
+          <SubLink href="/admin/management/associations"      label="Associations" onClick={onClose} />
+          <SubLink href="/admin/management/mayors"            label="Mayors"       onClick={onClose} />
+        </NavGroup>
+
+        {/* Content */}
+        <SectionLabel>Content</SectionLabel>
+        <NavGroup
+          label="Content"
+          defaultOpen={contentPaths.some((p) => pathname === p)}
+          icon={<ReportsIcon />}
+        >
+                    <SubLink href="/admin/Content/Donations" label="Donations" onClick={onClose} />
+
+          <SubLink href="/admin/Content/reports"   label="Reports"   onClick={onClose} />
+        </NavGroup>
+        
+     {/* Configuration */}
+        <SectionLabel>Configuration</SectionLabel>
+        <NavGroup
+          label="Configuration"
+          defaultOpen={configPaths.some((p) => pathname === p)}
+          icon={<ConfigurationIcon />}
+        >
+          <SubLink href="/admin/Configuration/Categories"   label="Categories"   onClick={onClose} />
+         
+        </NavGroup>
+
+        {/* Standalone items */}
+        <div className="mt-1">
+          <NavLink href="/admin/analytics" icon={<AnalyticsIcon />} label="Analytics" onClick={onClose} />
+          <NavLink href="/admin/settings"  icon={<SettingsIcon />}  label="Settings"  onClick={onClose} />
         </div>
-        <span>Sign out</span>
-      </button> 
       </nav>
 
-     
+      {/* Sign out */}
+      <div className="pt-4 border-t border-[#e8e8f0]">
+        <button
+          onClick={handleLogout}
+          className="flex items-center gap-3 w-full px-4 py-2.5 rounded-lg text-sm font-medium text-[#4a4a6a] hover:bg-[#f0f0f8] hover:text-[#1a1a3e] transition-all duration-200"
+        >
+          <span className="text-[#7a7a9e]"><SignOutIcon /></span>
+          <span>Sign out</span>
+        </button>
+      </div>
     </div>
   );
 }
@@ -164,12 +280,12 @@ export default function Sidebar() {
 
   return (
     <>
-      {/* ── DESKTOP: always-visible fixed sidebar ── */}
+      {/* Desktop: always-visible fixed sidebar */}
       <aside className="hidden md:flex fixed top-0 left-0 bottom-0 w-64 bg-[#f8f8fc] border-r border-[#e8e8f0] flex-col z-50">
         <SidebarContent onClose={() => {}} />
       </aside>
 
-      {/* ── MOBILE: top navbar with hamburger ── */}
+      {/* Mobile: top navbar */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-[#f8f8fc] border-b border-[#e8e8f0]">
         <span className="text-sm font-bold text-[#001f5c]">Admin Panel</span>
         <button
@@ -181,7 +297,7 @@ export default function Sidebar() {
         </button>
       </header>
 
-      {/* ── MOBILE: backdrop ── */}
+      {/* Mobile: backdrop */}
       {mobileOpen && (
         <div
           className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm"
@@ -189,11 +305,13 @@ export default function Sidebar() {
         />
       )}
 
-      {/* ── MOBILE: slide-in drawer ── */}
+      {/* Mobile: slide-in drawer */}
       <div
-        className={`md:hidden fixed top-0 left-0 bottom-0 z-50 w-72 bg-[#f8f8fc] border-r border-[#e8e8f0]
-          transform transition-transform duration-300 ease-in-out
-          ${mobileOpen ? "translate-x-0" : "-translate-x-full"}`}
+        className={
+          "md:hidden fixed top-0 left-0 bottom-0 z-50 w-72 bg-[#f8f8fc] border-r border-[#e8e8f0] " +
+          "transform transition-transform duration-300 ease-in-out " +
+          (mobileOpen ? "translate-x-0" : "-translate-x-full")
+        }
       >
         <div className="flex justify-end px-4 pt-4">
           <button
