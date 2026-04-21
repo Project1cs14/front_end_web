@@ -1,0 +1,8 @@
+commit 65bf8b832a3fbd6661964f94b71120e29c1cc6ed
+Author: ZineddineLch <zinoufatnaahmed@gmail.com>
+Date:   Mon Apr 6 20:39:50 2026 +0100
+
+    Update frontend admin routes and components
+
+ status.txt | Bin 0 -> 534 bytes
+ 1 file changed, 0 insertions(+), 0 deletions(-)

@@ -1,0 +1,38 @@
+On branch zineddine_branch
+Your branch is up to date with 'origin/zineddine_branch'.
+
+You are currently cherry-picking commit 0e0954f.
+  (fix conflicts and run "git cherry-pick --continue")
+  (use "git cherry-pick --skip" to skip this patch)
+  (use "git cherry-pick --abort" to cancel the cherry-pick operation)
+
+Changes to be committed:
+	modified:   app/components/Forgotpasswordform.jsx
+	modified:   app/components/MaireLayout.jsx
+	modified:   app/components/Resetpasswordform.jsx
+	new file:   app/components/SecAdminLayout.jsx
+	modified:   app/components/Sidebar.jsx
+	new file:   app/secadmin/Dashboard/page.jsx
+	new file:   app/secadmin/users/associations/page.jsx
+	new file:   app/secadmin/users/creationmaire/page.jsx
+	new file:   app/secadmin/users/users/page.jsx
+	new file:   lint_results.json
+
+Unmerged paths:
+  (use "git add <file>..." to mark resolution)
+	both modified:   app/admin/users/users/page.jsx
+	both modified:   app/components/LoginForm.jsx
+	both added:      app/components/Sidebar2.jsx
+
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+	../branches.txt
+	../git_log.txt
+	temp_contains.txt
+	temp_log.txt
+	temp_reflog_app.txt
+	temp_show1.txt
+	temp_show2.txt
+	temp_status.txt
+	temp_status_2.txt
+

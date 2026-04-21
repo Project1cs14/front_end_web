@@ -1,0 +1,19 @@
+{
+    "sqltools.connections": [
+        {
+            "mysqlOptions": {
+                "authProtocol": "default",
+                "enableSsl": "Disabled"
+            },
+            "ssh": "Disabled",
+            "previewLimit": 50,
+            "server": "mysql-12794af6-zerowaste.a.aivencloud.com",
+            "port": 11125,
+            "driver": "MySQL",
+            "name": "Zerowaste DB",
+            "database": "defaultdb",
+            "username": "avnadmin",
+            "password": "AVNS_FcEeqkZ4D3VJQUbq6z7"
+        }
+    ]
+}

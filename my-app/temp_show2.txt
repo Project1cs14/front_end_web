@@ -1,0 +1,21 @@
+commit 0e0954fac44d1ab234c81bb7524963e7862040e7
+Author: ZineddineLch <zinoufatnaahmed@gmail.com>
+Date:   Mon Apr 6 20:24:42 2026 +0100
+
+    adding the sec admin
+
+ my-app/app/admin/users/users/page.jsx            |    2 +-
+ my-app/app/components/Forgotpasswordform.jsx     |    2 +-
+ my-app/app/components/LoginForm.jsx              |   37 +-
+ my-app/app/components/MaireLayout.jsx            |    4 +-
+ my-app/app/components/Resetpasswordform.jsx      |    2 +-
+ my-app/app/components/SecAdminLayout.jsx         |   16 +
+ my-app/app/components/Sidebar.jsx                |    2 +-
+ my-app/app/components/Sidebar2.jsx               |  278 ++++
+ my-app/app/secadmin/Dashboard/page.jsx           |   83 ++
+ my-app/app/secadmin/users/associations/page.jsx  |  785 +++++++++++
+ my-app/app/secadmin/users/creationmaire/page.jsx |  386 ++++++
+ my-app/app/secadmin/users/users/page.jsx         | 1501 ++++++++++++++++++++++
+ my-app/lint_results.json                         |    0
+ my-app/package-lock.json                         |   10 +
+ 14 files changed, 3074 insertions(+), 34 deletions(-)
