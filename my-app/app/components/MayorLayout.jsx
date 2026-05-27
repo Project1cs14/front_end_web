@@ -1,8 +1,8 @@
-import Sidebar3 from "./Sidebar3";
-export default function MaireLayout({ children }) {
+import Sidebar from "./Mayor_Sidebar";
+export default function AdminLayout({ children }) {
   return (
     <div className="min-h-screen bg-[#f5f5f0]">
-      <Sidebar3 />
+      <Sidebar />
 
       {/*
         Desktop: push content right by sidebar width (ml-60)

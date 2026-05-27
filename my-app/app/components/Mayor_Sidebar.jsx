@@ -179,9 +179,9 @@ function SidebarContent({ onClose }) {
   const pathname = usePathname();
   const router = useRouter();
 
-  const managementPaths = ["/admin/management/admins", "/admin/management/users", "/admin/management/associations","/admin/management/mayors"];
-  const contentPaths = ["/admin/Content/reports", "/admin/Content/donations"];
-  const configPaths = ["/admin/Configuration/Categories", "/admin/Configuration/FoodSaver"];
+  const managementPaths = [ "/maire/users", "/maire/associations"];
+  
+  
   const handleLogout = async () => {
     try {
       await fetch("https://back-end-sawu.onrender.com/auth/logout", {
@@ -214,7 +214,7 @@ function SidebarContent({ onClose }) {
       <nav className="flex-1 flex flex-col gap-1 overflow-y-auto">
 
         {/* Dashboard */}
-        <NavLink href="/admin/Dashboard" icon={<HomeIcon />} label="Dashboard" onClick={onClose} />
+        <NavLink href="/maire/Dashboard" icon={<HomeIcon />} label="Dashboard" onClick={onClose} />
 
         {/* Management */}
         <SectionLabel>Management</SectionLabel>
@@ -223,40 +223,21 @@ function SidebarContent({ onClose }) {
           defaultOpen={managementPaths.some((p) => pathname === p)}
           icon={<UsersIcon />}
         >
-          <SubLink href="/admin/management/admins"            label="Admins"       onClick={onClose} />
-          <SubLink href="/admin/management/users"             label="Users"        onClick={onClose} />
           
-          <SubLink href="/admin/management/associations"      label="Associations" onClick={onClose} />
-          <SubLink href="/admin/management/mayors"            label="Mayors"       onClick={onClose} />
+          <SubLink href="/maire/users"             label="Users"        onClick={onClose} />
+          
+          <SubLink href="/maire/associations"      label="Associations" onClick={onClose} />
+          
         </NavGroup>
 
-        {/* Content */}
-        <SectionLabel>Content</SectionLabel>
-        <NavGroup
-          label="Content"
-          defaultOpen={contentPaths.some((p) => pathname === p)}
-          icon={<ReportsIcon />}
-        >
-                    <SubLink href="/admin/Content/Donations" label="Donations" onClick={onClose} />
-
-          <SubLink href="/admin/Content/reports"   label="Reports"   onClick={onClose} />
-        </NavGroup>
+       
         
-     {/* Configuration */}
-        <SectionLabel>Configuration</SectionLabel>
-        <NavGroup
-          label="Configuration"
-          defaultOpen={configPaths.some((p) => pathname === p)}
-          icon={<ConfigurationIcon />}
-        >
-          <SubLink href="/admin/Configuration/Categories"   label="Categories"   onClick={onClose} />
-          <SubLink href="/admin/Configuration/FoodSaver"    label="FoodSaver"    onClick={onClose} />
-        </NavGroup>
+     
 
         {/* Standalone items */}
         <div className="mt-1">
-          <NavLink href="/admin/analytics" icon={<AnalyticsIcon />} label="Analytics" onClick={onClose} />
-          <NavLink href="/admin/settings"  icon={<SettingsIcon />}  label="Settings"  onClick={onClose} />
+          <NavLink href="/maire/analytics" icon={<AnalyticsIcon />} label="Analytics" onClick={onClose} />
+          <NavLink href="/maire/settings"  icon={<SettingsIcon />}  label="Settings"  onClick={onClose} />
         </div>
       </nav>
 

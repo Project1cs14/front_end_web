@@ -95,6 +95,7 @@ function CategoryFormModal({ isOpen, onClose, onSubmit, editingCategory, isLoadi
   const [formData, setFormData] = useState({
     name: "",
     description: "",
+    coefficient: "",
     photo: null,
   });
   const [previewUrl, setPreviewUrl] = useState(null);
@@ -105,11 +106,12 @@ function CategoryFormModal({ isOpen, onClose, onSubmit, editingCategory, isLoadi
       setFormData({
         name: editingCategory.name || "",
         description: editingCategory.description || "",
+        coefficient: editingCategory.coefficient ?? "",
         photo: null,
       });
       setPreviewUrl(editingCategory.photo_url || null);
     } else {
-      setFormData({ name: "", description: "", photo: null });
+      setFormData({ name: "", description: "", coefficient: "", photo: null });
       setPreviewUrl(null);
     }
   }, [editingCategory, isOpen]);
@@ -153,7 +155,9 @@ function CategoryFormModal({ isOpen, onClose, onSubmit, editingCategory, isLoadi
               <p className="text-sm text-gray-500 mt-1">Define a new classification for your system.</p>
             </div>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600">
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
             </button>
           </div>
 
@@ -178,6 +182,20 @@ function CategoryFormModal({ isOpen, onClose, onSubmit, editingCategory, isLoadi
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Describe this category..."
                 rows={3}
+                className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a1f5e]/15 focus:border-[#1a1f5e]"
+              />
+            </div>
+
+            {/* Coefficient */}
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Coefficient</label>
+              <input
+                type="number"
+                min="0"
+                step="any"
+                value={formData.coefficient}
+                onChange={(e) => setFormData({ ...formData, coefficient: e.target.value })}
+                placeholder="e.g. 10"
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#1a1f5e]/15 focus:border-[#1a1f5e]"
               />
             </div>
@@ -354,6 +372,7 @@ export default function CategoriesPage() {
       const formDataToSend = new FormData();
       formDataToSend.append("name", formData.name);
       formDataToSend.append("description", formData.description);
+      formDataToSend.append("coefficient", formData.coefficient);
       if (formData.photo) {
         formDataToSend.append("photo_url", formData.photo);
       }
@@ -495,6 +514,7 @@ export default function CategoriesPage() {
                 <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Image</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Category Name</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Description</th>
+                <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Coefficient</th>
                 <th className="px-6 py-4 text-left text-xs font-bold text-white uppercase tracking-wider">Created</th>
                 <th className="px-6 py-4 text-right text-xs font-bold text-white uppercase tracking-wider">Actions</th>
               </tr>
@@ -502,7 +522,7 @@ export default function CategoriesPage() {
             <tbody className="divide-y divide-gray-100">
               {filtered.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="text-center py-20">
+                  <td colSpan={7} className="text-center py-20">
                     <div className="flex flex-col items-center gap-2">
                       <svg xmlns="http://www.w3.org/2000/svg" className="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -537,6 +557,17 @@ export default function CategoriesPage() {
                       <p className="font-semibold text-gray-900">{category.name || "—"}</p>
                     </td>
                     <td className="px-6 py-4 text-gray-600 text-xs max-w-xs truncate">{category.description || "—"}</td>
+                    <td className="px-6 py-4">
+                      <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
+                        !category.coefficient || category.coefficient < 5
+                          ? "bg-red-100 text-red-700"
+                          : category.coefficient < 15
+                          ? "bg-yellow-100 text-yellow-700"
+                          : "bg-green-100 text-green-700"
+                      }`}>
+                        {category.coefficient ?? "—"}
+                      </div>
+                    </td>
                     <td className="px-6 py-4 text-gray-500 text-xs font-medium">
                       {new Date(category.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
                     </td>

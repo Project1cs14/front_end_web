@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import MaireLayout from "@/app/components/MaireLayout";
+import MaireLayout from "@/app/components/MayorLayout";
 
 export default function Dashboard() {
   const router = useRouter();

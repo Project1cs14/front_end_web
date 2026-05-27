@@ -59,16 +59,115 @@ function TagPill({ label, color = "blue" }) {
 }
 
 // ── Detail Sidebar ─────────────────────────────────────────────────────────
+// ── Detail Sidebar ─────────────────────────────────────────────────────────
+function BadgeCard({ badge, type = "permanent" }) {
+  const isPermanent = type === "permanent";
+  return (
+    <div className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
+      isPermanent
+        ? "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-100"
+        : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100"
+    }`}>
+      {/* Badge Icon */}
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg shadow-sm ${
+        isPermanent ? "bg-amber-100" : "bg-blue-100"
+      }`}>
+        {badge.icon || (isPermanent ? "🏅" : "🌟")}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className={`text-xs font-bold truncate ${isPermanent ? "text-amber-800" : "text-blue-800"}`}>
+          {badge.name || badge.title || "Badge"}
+        </p>
+        {badge.description && (
+          <p className="text-[10px] text-gray-400 truncate mt-0.5">{badge.description}</p>
+        )}
+        {badge.earned_at && (
+          <p className={`text-[10px] font-medium mt-0.5 ${isPermanent ? "text-amber-500" : "text-blue-400"}`}>
+            {new Date(badge.earned_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })}
+          </p>
+        )}
+      </div>
+      {/* Type indicator */}
+      <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full flex-shrink-0 ${
+        isPermanent ? "bg-amber-200/70 text-amber-700" : "bg-blue-200/70 text-blue-700"
+      }`}>
+        {isPermanent ? "Perm" : "Monthly"}
+      </span>
+    </div>
+  );
+}
+
 function UserDetailSidebar({ user, isOpen, onClose }) {
+  const [detailData, setDetailData] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+
   useEffect(() => {
     const handler = (e) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
   }, [onClose]);
 
-  const info = user || {};
+  // Fetch full user details (including badges) when sidebar opens
+  useEffect(() => {
+    if (!isOpen || !user) { setDetailData(null); return; }
+    const targetId = user.user_id || user.id;
+    if (!targetId) return;
+
+    const token = getToken();
+    if (!token) return;
+
+    setDetailLoading(true);
+    fetch(`${BASE_URL}/admin/users/${targetId}`, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (data?.success && data?.user) setDetailData(data.user);
+      })
+      .catch(() => {})
+      .finally(() => setDetailLoading(false));
+  }, [isOpen, user]);
+
+  // Merge list-level user data with detail data; detail takes precedence
+  const db = detailData?.donateur_beneficiaire || {};
+  const info = {
+    ...(user || {}),
+    // Override with detail-level fields when available
+    ...(detailData ? {
+      email: detailData.email,
+      phone: detailData.phone,
+      role: detailData.role,
+      is_active: detailData.is_active,
+      is_verified: detailData.is_verified,
+      created_at: detailData.created_at,
+      quartier_wilaya: detailData.quartier_wilaya || detailData.wilaya || user?.quartier_wilaya,
+      quartier_nom: detailData.quartier_nom || user?.quartier_nom,
+    } : {}),
+    // Merge donateur_beneficiaire fields
+    adresse: db.adresse || user?.adresse,
+    points: db.points ?? user?.points,
+    is_food_saver: db.is_food_saver ?? user?.is_food_saver,
+    search_distance: db.search_distance || user?.search_distance,
+    dietary_restrictions: db.dietary_restrictions || user?.dietary_restrictions,
+    allergies: db.allergies || user?.allergies,
+    stars: db.stars ?? user?.stars,
+    nb_dons_completes: db.nb_dons_completes,
+    nb_reservations_honorees: db.nb_reservations_honorees,
+    nb_annulations: db.nb_annulations,
+    is_trusted: db.is_trusted,
+    points_mensuel: db.points_mensuel,
+  };
+
+  const badges = detailData?.badges || {};
+  const permanentBadges = badges.badges_permanents || [];
+  const monthlyBadges = badges.badges_mensuels || [];
+  const totalBadges = badges.total ?? (permanentBadges.length + monthlyBadges.length);
+  const hasBadges = permanentBadges.length > 0 || monthlyBadges.length > 0;
+
   const isActive = info?.is_active === 1;
-  const displayName = info.name || (info.first_name && info.last_name ? `${info.first_name} ${info.last_name}` : "User");
+  const displayName = info.name || (info.first_name && info.last_name
+    ? `${info.first_name} ${info.last_name}` : "User");
   const initials = displayName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
 
   const InfoRow = ({ label, value, icon }) => (
@@ -78,27 +177,51 @@ function UserDetailSidebar({ user, isOpen, onClose }) {
       </div>
       <div className="min-w-0 flex-1">
         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{label}</p>
-        <p className="text-sm font-medium text-gray-800 truncate mt-0.5">{value || <span className="text-gray-300">—</span>}</p>
+        <p className="text-sm font-medium text-gray-800 truncate mt-0.5">
+          {value || <span className="text-gray-300">—</span>}
+        </p>
       </div>
     </div>
   );
 
-  const SectionTitle = ({ children }) => (
-    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider pt-4 pb-1">{children}</p>
+  const SectionTitle = ({ children, action }) => (
+    <div className="flex items-center justify-between pt-4 pb-1">
+      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">{children}</p>
+      {action}
+    </div>
   );
+
+  const StatPill = ({ label, value, color = "blue" }) => {
+    const colors = {
+      blue: "bg-blue-50 text-blue-700 border-blue-100",
+      emerald: "bg-emerald-50 text-emerald-700 border-emerald-100",
+      rose: "bg-rose-50 text-rose-700 border-rose-100",
+    };
+    return (
+      <div className={`flex flex-col items-center px-3 py-2 rounded-xl border ${colors[color]} flex-1`}>
+        <span className="text-base font-bold">{value ?? 0}</span>
+        <span className="text-[9px] font-semibold uppercase tracking-wide mt-0.5 text-center leading-tight">{label}</span>
+      </div>
+    );
+  };
 
   return (
     <>
       <div
-        className={"fixed inset-0 bg-black/25 backdrop-blur-[2px] z-40 transition-opacity duration-300 " + (isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none")}
+        className={"fixed inset-0 bg-black/25 backdrop-blur-[2px] z-40 transition-opacity duration-300 " +
+          (isOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none")}
         onClick={onClose}
       />
-      <div className={"fixed top-0 right-0 h-full w-full max-w-[360px] bg-white z-50 flex flex-col transition-transform duration-300 ease-out shadow-[−4px_0_40px_rgba(0,0,0,0.10)] " + (isOpen ? "translate-x-0" : "translate-x-full")}>
+      <div className={"fixed top-0 right-0 h-full w-full max-w-[360px] bg-white z-50 flex flex-col transition-transform duration-300 ease-out shadow-[-4px_0_40px_rgba(0,0,0,0.10)] " +
+        (isOpen ? "translate-x-0" : "translate-x-full")}>
 
-        {/* Header */}
+        {/* ── Header ── */}
         <div className="bg-gradient-to-br from-[#1a1f5e] to-[#2d3490] px-6 pt-10 pb-6 relative flex-shrink-0">
-          <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          <button onClick={onClose}
+            className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
 
           <div className="flex items-center gap-4 mb-4">
@@ -112,7 +235,8 @@ function UserDetailSidebar({ user, isOpen, onClose }) {
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
-            <span className={"inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full " + (isActive ? "bg-emerald-400/20 text-emerald-300" : "bg-rose-400/20 text-rose-300")}>
+            <span className={"inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full " +
+              (isActive ? "bg-emerald-400/20 text-emerald-300" : "bg-rose-400/20 text-rose-300")}>
               <span className={"w-1.5 h-1.5 rounded-full " + (isActive ? "bg-emerald-400" : "bg-rose-400")} />
               {isActive ? "Active" : "Suspended"}
             </span>
@@ -126,32 +250,60 @@ function UserDetailSidebar({ user, isOpen, onClose }) {
                 ★ {Number(info.stars).toFixed(1)}
               </span>
             )}
+            {info.is_trusted === 1 && (
+              <span className="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-full bg-sky-400/20 text-sky-300">
+                ✓ Trusted
+              </span>
+            )}
           </div>
         </div>
 
-        {/* Body */}
+        {/* ── Body ── */}
         <div className="flex-1 overflow-y-auto px-5 pb-4">
+
+          {/* Loading overlay for detail fetch */}
+          {detailLoading && (
+            <div className="flex items-center justify-center gap-2 py-4 mt-2 bg-blue-50 rounded-xl">
+              <span className="w-3.5 h-3.5 border-2 border-[#1a1f5e] border-t-transparent rounded-full animate-spin" />
+              <span className="text-xs text-[#1a1f5e] font-medium">Loading full profile…</span>
+            </div>
+          )}
+
           <SectionTitle>Contact</SectionTitle>
           <InfoRow label="Email" value={info?.email} icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+            </svg>
           } />
           <InfoRow label="Phone" value={info?.phone} icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+            </svg>
           } />
           <InfoRow label="Address" value={info?.adresse} icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+            </svg>
           } />
 
           <SectionTitle>Location</SectionTitle>
           <InfoRow label="Wilaya" value={info?.quartier_wilaya} icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
           } />
           <InfoRow label="Commune" value={info?.quartier_nom} icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+            </svg>
           } />
           {info?.search_distance && (
             <InfoRow label="Search Radius" value={`${(info.search_distance / 1000).toFixed(1)} km`} icon={
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="11" cy="11" r="8" strokeWidth={2}/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35"/></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <circle cx="11" cy="11" r="8" strokeWidth={2} />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35" />
+              </svg>
             } />
           )}
 
@@ -175,24 +327,132 @@ function UserDetailSidebar({ user, isOpen, onClose }) {
 
           <SectionTitle>Account</SectionTitle>
           <InfoRow label="Points" value={info?.points != null ? `${info.points} pts` : null} icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           } />
           <InfoRow label="Role" value={info?.role || "User"} icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+            </svg>
           } />
           <InfoRow label="Verified" value={info?.is_verified === 1 ? "Yes ✓" : "No"} icon={
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
           } />
           <InfoRow
             label="Member Since"
             value={info?.created_at ? new Date(info.created_at).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : null}
-            icon={<svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>}
+            icon={
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            }
           />
+
+          {/* Activity Stats — shown only when detail data is loaded */}
+          {detailData && (
+            <>
+              <SectionTitle>Activity</SectionTitle>
+              <div className="flex gap-2 mb-1">
+                <StatPill label="Donations" value={info.nb_dons_completes} color="blue" />
+                <StatPill label="Reservations" value={info.nb_reservations_honorees} color="emerald" />
+                <StatPill label="Cancellations" value={info.nb_annulations} color="rose" />
+              </div>
+              {info.points_mensuel != null && (
+                <div className="mt-2 flex items-center gap-2 px-3 py-2 bg-indigo-50 rounded-xl border border-indigo-100">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5 text-indigo-500 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                  <span className="text-xs text-indigo-600 font-medium">Monthly Points:</span>
+                  <span className="text-xs font-bold text-indigo-800 ml-auto">{info.points_mensuel} pts</span>
+                </div>
+              )}
+            </>
+          )}
+
+          {/* ── Badges Section ── */}
+          <SectionTitle>
+            Badges
+            {detailData && (
+              <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-[#1a1f5e]/8 text-[#1a1f5e]">
+                {totalBadges} total
+              </span>
+            )}
+          </SectionTitle>
+
+          {detailLoading ? (
+            /* Skeleton while loading */
+            <div className="space-y-2 mt-1 mb-2">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-16 rounded-xl bg-gray-100 animate-pulse" />
+              ))}
+            </div>
+          ) : !detailData ? (
+            /* Not yet fetched */
+            <div className="flex items-center justify-center py-6 text-gray-300">
+              <p className="text-xs">Loading badges…</p>
+            </div>
+          ) : !hasBadges ? (
+            /* Empty state */
+            <div className="flex flex-col items-center justify-center py-7 gap-2">
+              <div className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-100 flex items-center justify-center text-2xl">
+                🎖️
+              </div>
+              <p className="text-xs font-semibold text-gray-400">No badges earned yet</p>
+              <p className="text-[10px] text-gray-300 text-center leading-relaxed max-w-[180px]">
+                Badges are awarded for completed donations, activity milestones and more.
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-2 mt-1 mb-2">
+              {/* Permanent Badges */}
+              {permanentBadges.length > 0 && (
+                <div>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[9px] font-bold text-amber-600 uppercase tracking-widest">Permanent</span>
+                    <span className="flex-1 h-px bg-amber-100" />
+                    <span className="text-[9px] font-bold text-amber-500 bg-amber-50 px-1.5 py-0.5 rounded-full border border-amber-100">
+                      {permanentBadges.length}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {permanentBadges.map((b, i) => (
+                      <BadgeCard key={b.id || i} badge={b} type="permanent" />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Monthly Badges */}
+              {monthlyBadges.length > 0 && (
+                <div className={permanentBadges.length > 0 ? "mt-3" : ""}>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[9px] font-bold text-blue-600 uppercase tracking-widest">Monthly</span>
+                    <span className="flex-1 h-px bg-blue-100" />
+                    <span className="text-[9px] font-bold text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-full border border-blue-100">
+                      {monthlyBadges.length}
+                    </span>
+                  </div>
+                  <div className="space-y-1.5">
+                    {monthlyBadges.map((b, i) => (
+                      <BadgeCard key={b.id || i} badge={b} type="monthly" />
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* bottom breathing room */}
+          <div className="h-2" />
         </div>
 
-        {/* Footer */}
+        {/* ── Footer ── */}
         <div className="px-5 py-4 border-t border-gray-100 bg-gray-50/50 flex-shrink-0">
-          <button onClick={onClose} className="w-full py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-white transition-colors">
+          <button onClick={onClose}
+            className="w-full py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-white transition-colors">
             Close
           </button>
         </div>

@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import MaireLayout from "@/app/components/MaireLayout";
+import MaireLayout from "@/app/components/MayorLayout";
 import Image from "next/image";
 
 const BASE_URL = "https://back-end-sawu.onrender.com";
@@ -13,83 +13,6 @@ const getToken = () =>
       sessionStorage.getItem("accessToken"))) ||
   null;
 
-// ── Confirmation Modal ─────────────────────────────────────────────────────
-function ConfirmModal({ title, message, confirmText, cancelText, onConfirm, onCancel, isDanger = false, loading = false, icon = null }) {
-  return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 150, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
-      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.12)", overflow: "hidden" }}>
-        <div style={{ padding: "24px" }}>
-          {icon && (
-            <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
-              <div style={{
-                width: 48,
-                height: 48,
-                borderRadius: "50%",
-                background: isDanger ? "#fef2f2" : "#f0fdf4",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                color: isDanger ? "#dc2626" : "#16a34a",
-              }}>
-                {icon}
-              </div>
-            </div>
-          )}
-          
-          <h3 style={{ fontSize: 18, fontWeight: 600, color: "#1f2937", margin: "0 0 8px 0", textAlign: "center" }}>{title}</h3>
-          <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px 0", lineHeight: 1.6, textAlign: "center" }}>{message}</p>
-
-          <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-            <button
-              onClick={onCancel}
-              disabled={loading}
-              style={{
-                flex: 1,
-                padding: "10px 0",
-                borderRadius: 8,
-                border: "1px solid #d1d5db",
-                background: "#fff",
-                color: "#6b7280",
-                fontSize: 13,
-                fontWeight: 600,
-                fontFamily: "system-ui",
-                cursor: loading ? "not-allowed" : "pointer",
-                transition: "all .2s",
-                opacity: loading ? 0.6 : 1,
-              }}
-              onMouseEnter={(e) => { if (!loading) e.target.style.background = "#f3f4f6"; }}
-              onMouseLeave={(e) => { e.target.style.background = "#fff"; }}
-            >
-              {cancelText}
-            </button>
-            <button
-              onClick={onConfirm}
-              disabled={loading}
-              style={{
-                flex: 1,
-                padding: "10px 0",
-                borderRadius: 8,
-                border: "none",
-                background: isDanger ? "#dc2626" : "#16a34a",
-                color: "#fff",
-                fontSize: 13,
-                fontWeight: 600,
-                fontFamily: "system-ui",
-                cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.6 : 1,
-                transition: "all .2s",
-              }}
-              onMouseEnter={(e) => { if (!loading) e.target.style.opacity = "0.9"; }}
-              onMouseLeave={(e) => { e.target.style.opacity = "1"; }}
-            >
-              {loading ? "Processing..." : confirmText}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 // ── Avatar ─────────────────────────────────────────────────────────────────
 function Avatar({ name, url, size = 32 }) {
@@ -174,6 +97,43 @@ function Avatar({ name, url, size = 32 }) {
 
 // ── Detail Drawer ─────────────────────────────────────────────────────────
 function DetailDrawer({ user, onClose, isMobile }) {
+  const [detailData, setDetailData] = useState(null);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchUserDetails = async () => {
+      const token = getToken();
+      if (!token) return;
+      
+      setLoading(true);
+      try {
+        const targetId = user.user_id || user.id;
+        const res = await fetch(`${BASE_URL}/admin/users/${targetId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.success && data?.user) {
+            setDetailData(data.user);
+          }
+        }
+      } catch (err) {
+        console.error("Failed to fetch user details:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchUserDetails();
+  }, [user]);
+
+  const mergedUser = {
+    ...user,
+    ...detailData,
+  };
+
   const panelStyle = isMobile
     ? {
         position: "fixed",
@@ -224,7 +184,10 @@ function DetailDrawer({ user, onClose, isMobile }) {
         backdropFilter: "blur(2px)",
       };
 
-  const isActive = user.is_active === 1;
+  const isActive = mergedUser.is_active === 1;
+  const displayName = mergedUser.name || (mergedUser.first_name && mergedUser.last_name
+    ? `${mergedUser.first_name} ${mergedUser.last_name}`
+    : mergedUser.email || "User");
 
   return (
     <>
@@ -296,213 +259,298 @@ function DetailDrawer({ user, onClose, isMobile }) {
           flexDirection: "column",
           gap: 20,
         }}>
-          {/* Profile Section */}
-          <div style={{
-            textAlign: "center",
-            paddingBottom: 20,
-            borderBottom: "1px solid #f3f4f6",
-          }}>
-            <Avatar name={user.name} url={user.avatar_url} size={80} />
-            <h2 style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: "#1f2937",
-              margin: "12px 0 4px 0",
-            }}>
-              {user.name}
-            </h2>
-            <p style={{
-              fontSize: 13,
-              color: "#9ca3af",
-              margin: "0 0 8px 0",
-            }}>
-              {user.email}
-            </p>
-            <div style={{
-              display: "inline-block",
-              padding: "4px 10px",
-              borderRadius: 6,
-              background: isActive ? "#dcfce7" : "#fee2e2",
-              color: isActive ? "#166534" : "#991b1b",
-              fontSize: 12,
-              fontWeight: 500,
-            }}>
-              {isActive ? "Active" : "Suspended"}
+          {loading && (
+            <div style={{ textAlign: "center", padding: "40px" }}>
+              <div style={{ width: 32, height: 32, border: "3px solid #e5e7eb", borderTopColor: "#3b82f6", borderRadius: "50%", animation: "spin 1s linear infinite", margin: "0 auto" }} />
+              <p style={{ fontSize: 13, color: "#6b7280", marginTop: 12 }}>Loading details...</p>
             </div>
-          </div>
+          )}
 
-          {/* Information Section */}
-          <section>
-            <p style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#9ca3af",
-              margin: "0 0 12px 0",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}>
-              Contact Information
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {[
-                { label: "Email", value: user.email },
-                { label: "Phone", value: user.phone },
-              ].map(({ label, value }) => (
-                <div key={label} style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "10px 12px",
-                  background: "#f9fafb",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 8,
-                }}>
-                  <p style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "#9ca3af",
-                    margin: 0,
-                    textTransform: "uppercase",
-                  }}>
-                    {label}
-                  </p>
-                  <p style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "#374151",
-                    margin: 0,
-                  }}>
-                    {value || "—"}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Statistics Section */}
-          <section>
-            <p style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#9ca3af",
-              margin: "0 0 12px 0",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}>
-              Account Statistics
-            </p>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
-              {[
-                { label: "Role", value: user.role || "User" },
-                { label: "Verified", value: user.is_verified === 1 ? "Yes" : "No" },
-              ].map(({ label, value }) => (
-                <div key={label} style={{
-                  padding: "10px 12px",
-                  background: "#f9fafb",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 8,
-                }}>
-                  <p style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "#9ca3af",
-                    margin: "0 0 4px 0",
-                    textTransform: "uppercase",
-                  }}>
-                    {label}
-                  </p>
-                  <p style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "#374151",
-                    margin: 0,
-                  }}>
-                    {value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {/* Dates Section */}
-          <section>
-            <p style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#9ca3af",
-              margin: "0 0 12px 0",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}>
-              Account Timeline
-            </p>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {[
-                {
-                  label: "Joined",
-                  value: user.created_at
-                    ? new Date(user.created_at).toLocaleDateString()
-                    : "—",
-                },
-                {
-                  label: "Last Active",
-                  value: user.updated_at
-                    ? new Date(user.updated_at).toLocaleDateString()
-                    : "—",
-                },
-              ].map(({ label, value }) => (
-                <div key={label} style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  padding: "10px 12px",
-                  background: "#f9fafb",
-                  border: "1px solid #e5e7eb",
-                  borderRadius: 8,
-                }}>
-                  <p style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "#9ca3af",
-                    margin: 0,
-                    textTransform: "uppercase",
-                  }}>
-                    {label}
-                  </p>
-                  <p style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "#374151",
-                    margin: 0,
-                  }}>
-                    {value}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          {user.bio && (
-            <section>
-              <p style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: "#9ca3af",
-                margin: "0 0 8px 0",
-                textTransform: "uppercase",
+          {!loading && (
+            <>
+              {/* Profile Section */}
+              <div style={{
+                textAlign: "center",
+                paddingBottom: 20,
+                borderBottom: "1px solid #f3f4f6",
               }}>
-                Bio
-              </p>
-              <p style={{
-                fontSize: 13,
-                lineHeight: 1.6,
-                color: "#374151",
-                margin: 0,
-                padding: "10px 12px",
-                background: "#f9fafb",
-                borderRadius: 8,
-              }}>
-                {user.bio}
-              </p>
-            </section>
+                <Avatar name={displayName} url={mergedUser.avatar_url} size={80} />
+                <h2 style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  color: "#1f2937",
+                  margin: "12px 0 4px 0",
+                }}>
+                  {displayName}
+                </h2>
+                <p style={{
+                  fontSize: 13,
+                  color: "#9ca3af",
+                  margin: "0 0 8px 0",
+                }}>
+                  {mergedUser.email}
+                </p>
+                <div style={{
+                  display: "inline-block",
+                  padding: "4px 10px",
+                  borderRadius: 6,
+                  background: isActive ? "#dcfce7" : "#fee2e2",
+                  color: isActive ? "#166534" : "#991b1b",
+                  fontSize: 12,
+                  fontWeight: 500,
+                }}>
+                  {isActive ? "Active" : "Suspended"}
+                </div>
+              </div>
+
+              {/* Contact Information */}
+              <section>
+                <p style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#9ca3af",
+                  margin: "0 0 12px 0",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}>
+                  Contact Information
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {[
+                    { label: "Email", value: mergedUser.email },
+                    { label: "Phone", value: mergedUser.phone },
+                    { label: "Address", value: mergedUser.adresse || mergedUser.address },
+                  ].map(({ label, value }) => (
+                    <div key={label} style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      background: "#f9fafb",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 8,
+                    }}>
+                      <p style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#9ca3af",
+                        margin: 0,
+                        textTransform: "uppercase",
+                      }}>
+                        {label}
+                      </p>
+                      <p style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "#374151",
+                        margin: 0,
+                      }}>
+                        {value || "—"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Location Information */}
+              <section>
+                <p style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#9ca3af",
+                  margin: "0 0 12px 0",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}>
+                  Location
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {[
+                    { label: "Wilaya", value: mergedUser.quartier_wilaya || mergedUser.wilaya },
+                    { label: "Commune", value: mergedUser.quartier_nom },
+                  ].map(({ label, value }) => (
+                    <div key={label} style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      background: "#f9fafb",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 8,
+                    }}>
+                      <p style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#9ca3af",
+                        margin: 0,
+                        textTransform: "uppercase",
+                      }}>
+                        {label}
+                      </p>
+                      <p style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "#374151",
+                        margin: 0,
+                      }}>
+                        {value || "—"}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Account Statistics */}
+              <section>
+                <p style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#9ca3af",
+                  margin: "0 0 12px 0",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}>
+                  Account Information
+                </p>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  {[
+                    { label: "Role", value: mergedUser.role || "User" },
+                    { label: "Verified", value: mergedUser.is_verified === 1 ? "Yes" : "No" },
+                    { label: "Points", value: mergedUser.points != null ? `${mergedUser.points} pts` : "—" },
+                    { label: "Food Saver", value: mergedUser.is_food_saver === 1 ? "Yes" : "No" },
+                  ].map(({ label, value }) => (
+                    <div key={label} style={{
+                      padding: "10px 12px",
+                      background: "#f9fafb",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 8,
+                    }}>
+                      <p style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#9ca3af",
+                        margin: "0 0 4px 0",
+                        textTransform: "uppercase",
+                      }}>
+                        {label}
+                      </p>
+                      <p style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "#374151",
+                        margin: 0,
+                      }}>
+                        {value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+
+              {/* Activity Statistics (if available from detail API) */}
+              {detailData && (mergedUser.nb_dons_completes !== undefined || mergedUser.nb_reservations_honorees !== undefined) && (
+                <section>
+                  <p style={{
+                    fontSize: 11,
+                    fontWeight: 700,
+                    color: "#9ca3af",
+                    margin: "0 0 12px 0",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.05em",
+                  }}>
+                    Activity
+                  </p>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 10 }}>
+                    {[
+                      { label: "Donations", value: mergedUser.nb_dons_completes },
+                      { label: "Reservations", value: mergedUser.nb_reservations_honorees },
+                      { label: "Cancellations", value: mergedUser.nb_annulations },
+                    ].map(({ label, value }) => (
+                      <div key={label} style={{
+                        padding: "10px 12px",
+                        background: "#f9fafb",
+                        border: "1px solid #e5e7eb",
+                        borderRadius: 8,
+                        textAlign: "center",
+                      }}>
+                        <p style={{
+                          fontSize: 18,
+                          fontWeight: 700,
+                          color: "#1f2937",
+                          margin: 0,
+                        }}>
+                          {value ?? 0}
+                        </p>
+                        <p style={{
+                          fontSize: 9,
+                          fontWeight: 600,
+                          color: "#9ca3af",
+                          margin: "4px 0 0 0",
+                          textTransform: "uppercase",
+                        }}>
+                          {label}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Dates Section */}
+              <section>
+                <p style={{
+                  fontSize: 11,
+                  fontWeight: 700,
+                  color: "#9ca3af",
+                  margin: "0 0 12px 0",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.05em",
+                }}>
+                  Account Timeline
+                </p>
+                <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                  {[
+                    {
+                      label: "Joined",
+                      value: mergedUser.created_at
+                        ? new Date(mergedUser.created_at).toLocaleDateString()
+                        : "—",
+                    },
+                    {
+                      label: "Last Updated",
+                      value: mergedUser.updated_at
+                        ? new Date(mergedUser.updated_at).toLocaleDateString()
+                        : "—",
+                    },
+                  ].map(({ label, value }) => (
+                    <div key={label} style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      background: "#f9fafb",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 8,
+                    }}>
+                      <p style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "#9ca3af",
+                        margin: 0,
+                        textTransform: "uppercase",
+                      }}>
+                        {label}
+                      </p>
+                      <p style={{
+                        fontSize: 13,
+                        fontWeight: 500,
+                        color: "#374151",
+                        margin: 0,
+                      }}>
+                        {value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            </>
           )}
         </div>
       </div>
@@ -513,6 +561,9 @@ function DetailDrawer({ user, onClose, isMobile }) {
 // ── Mobile Card ─────────────────────────────────────────────────────────
 function MobileUserCard({ user, idx, onView }) {
   const isActive = user.is_active === 1;
+  const displayName = user.name || (user.first_name && user.last_name
+    ? `${user.first_name} ${user.last_name}`
+    : user.email || "User");
 
   return (
     <div style={{
@@ -526,7 +577,7 @@ function MobileUserCard({ user, idx, onView }) {
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Avatar name={user.first_name || user.name} url={user.avatar_url} size={40} />
+          <Avatar name={displayName} url={user.avatar_url} size={40} />
           <div style={{ minWidth: 0 }}>
             <p style={{
               fontSize: 14,
@@ -537,9 +588,7 @@ function MobileUserCard({ user, idx, onView }) {
               textOverflow: "ellipsis",
               whiteSpace: "nowrap",
             }}>
-              {user.first_name && user.last_name
-                ? `${user.first_name} ${user.last_name}`
-                : user.name || "User"}
+              {displayName}
             </p>
             <p style={{
               fontSize: 11,
@@ -555,8 +604,10 @@ function MobileUserCard({ user, idx, onView }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {[
-          { label: "Role", value: user.role },
+          { label: "Role", value: user.role || "User" },
           { label: "Status", value: isActive ? "Active" : "Suspended" },
+          { label: "Phone", value: user.phone || "—" },
+          { label: "Points", value: user.points != null ? `${user.points} pts` : "—" },
         ].map(({ label, value }) => (
           <div key={label}>
             <p style={{
@@ -610,12 +661,10 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState("first_name");
+  const [sortKey, setSortKey] = useState("name");
   const [sortDir, setSortDir] = useState("asc");
   const [detailTarget, setDetailTarget] = useState(null);
   const [toast, setToast] = useState(null);
-  const [actionLoading, setActionLoading] = useState(null);
-  const [confirmModal, setConfirmModal] = useState(null);
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1200
   );
@@ -650,8 +699,6 @@ export default function UsersPage() {
       if (!res.ok) throw new Error("Failed to fetch users");
       const data = await res.json();
       
-      console.log("API Response:", data);
-      
       // Handle different API response formats
       let usersList = [];
       if (Array.isArray(data)) {
@@ -663,11 +710,9 @@ export default function UsersPage() {
       } else if (data.user && Array.isArray(data.user)) {
         usersList = data.user;
       } else {
-        console.warn("Unexpected data format:", data);
         usersList = [];
       }
       
-      console.log("Extracted users:", usersList);
       setUsers(usersList || []);
     } catch (err) {
       setError(err.message || "Failed to load users");
@@ -695,8 +740,14 @@ export default function UsersPage() {
       );
     }
     list.sort((a, b) => {
-      const aVal = String(a[sortKey] || a.first_name || a.name || "").toLowerCase();
-      const bVal = String(b[sortKey] || b.first_name || b.name || "").toLowerCase();
+      let aVal, bVal;
+      if (sortKey === "name") {
+        aVal = (a.name || a.first_name || a.email || "").toLowerCase();
+        bVal = (b.name || b.first_name || b.email || "").toLowerCase();
+      } else {
+        aVal = String(a[sortKey] || "").toLowerCase();
+        bVal = String(b[sortKey] || "").toLowerCase();
+      }
       return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     });
     setFiltered(list);
@@ -707,150 +758,6 @@ export default function UsersPage() {
     else {
       setSortKey(key);
       setSortDir("asc");
-    }
-  };
-
-  const handleSuspendUser = (userId) => {
-    const user = users.find(u => u.id === userId);
-    setConfirmModal({
-      type: "suspend",
-      userId,
-      title: "Suspend User Account",
-      message: `Are you sure you want to suspend ${user?.first_name || user?.name}? They will be unable to access their account until reactivated.`,
-      confirmText: "Suspend Account",
-      cancelText: "Cancel",
-      isDanger: true,
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M6 9l12 0M9 5h6M10 14h4M8 19h8a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z" />
-        </svg>
-      ),
-    });
-  };
-
-  const handleResumeUser = (userId) => {
-    const user = users.find(u => u.id === userId);
-    setConfirmModal({
-      type: "resume",
-      userId,
-      title: "Reactivate User Account",
-      message: `Are you sure you want to reactivate ${user?.first_name || user?.name}? They will regain access to their account.`,
-      confirmText: "Reactivate Account",
-      cancelText: "Cancel",
-      isDanger: false,
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="20 6 9 17 4 12" />
-        </svg>
-      ),
-    });
-  };
-
-  const handleDeleteUser = (userId) => {
-    const user = users.find(u => u.id === userId);
-    setConfirmModal({
-      type: "delete",
-      userId,
-      title: "Delete User Account Permanently",
-      message: `This will permanently delete ${user?.first_name || user?.name}'s account and all associated data. This action cannot be undone.`,
-      confirmText: "Delete Permanently",
-      cancelText: "Cancel",
-      isDanger: true,
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <polyline points="3 6 5 6 21 6" />
-          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-          <line x1="10" y1="11" x2="10" y2="17" />
-          <line x1="14" y1="11" x2="14" y2="17" />
-        </svg>
-      ),
-    });
-  };
-
-  const executeConfirmAction = async () => {
-    if (!confirmModal) return;
-
-    const token = getToken();
-    if (!token) {
-      showToast("No token found. Please login again.", "error");
-      return;
-    }
-
-    setActionLoading(confirmModal.userId);
-    try {
-      let endpoint = "";
-      let method = "PATCH";
-
-      if (confirmModal.type === "suspend") {
-        endpoint = `${BASE_URL}/admin/deactivate/${confirmModal.userId}`;
-      } else if (confirmModal.type === "resume") {
-        endpoint = `${BASE_URL}/admin/activate/${confirmModal.userId}`;
-      } else if (confirmModal.type === "delete") {
-        endpoint = `${BASE_URL}/admin/delete/${confirmModal.userId}`;
-        method = "DELETE";
-      }
-
-      console.log(`Making ${method} request to: ${endpoint}`);
-
-      const res = await fetch(endpoint, {
-        method,
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-        body: confirmModal.type === "suspend" ? JSON.stringify({ reason: "Account suspended by administrator" }) : null,
-      });
-
-      console.log(`Response status: ${res.status}`);
-      
-      const contentType = res.headers.get("content-type");
-      let data = {};
-
-      // Check if response is JSON
-      if (contentType && contentType.includes("application/json")) {
-        data = await res.json();
-      } else {
-        const text = await res.text();
-        console.error("Non-JSON response:", text.substring(0, 300));
-        
-        if (res.status === 401) {
-          throw new Error("Unauthorized: Your token has expired. Please login again.");
-        } else if (res.status === 404) {
-          throw new Error("Endpoint not found. Your backend may not have implemented this feature yet.");
-        } else if (res.status === 500) {
-          throw new Error("Server error. Please contact your backend team.");
-        } else {
-          throw new Error(`Server returned ${res.status}: ${res.statusText}`);
-        }
-      }
-
-      if (!res.ok) {
-        const errorMsg = data.error || data.message || data.msg || `HTTP ${res.status}: ${res.statusText}`;
-        throw new Error(errorMsg);
-      }
-
-      if (confirmModal.type === "delete") {
-        setUsers((prev) => prev.filter((u) => u.id !== confirmModal.userId));
-        setDetailTarget(null);
-        showToast("User account deleted successfully", "success");
-      } else if (confirmModal.type === "suspend") {
-        setUsers((prev) =>
-          prev.map((u) => (u.id === confirmModal.userId ? { ...u, is_active: 0 } : u))
-        );
-        showToast("User suspended successfully", "success");
-      } else if (confirmModal.type === "resume") {
-        setUsers((prev) =>
-          prev.map((u) => (u.id === confirmModal.userId ? { ...u, is_active: 1 } : u))
-        );
-        showToast("User reactivated successfully", "success");
-      }
-
-      setConfirmModal(null);
-    } catch (err) {
-      console.error("Error details:", err);
-      showToast(err.message || "Operation failed", "error");
-    } finally {
-      setActionLoading(null);
     }
   };
 
@@ -915,20 +822,6 @@ export default function UsersPage() {
       `}</style>
 
       <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", width: "100%", maxWidth: isDesktop ? 1200 : "100%" }}>
-
-        {confirmModal && (
-          <ConfirmModal
-            title={confirmModal.title}
-            message={confirmModal.message}
-            confirmText={confirmModal.confirmText}
-            cancelText={confirmModal.cancelText}
-            isDanger={confirmModal.isDanger}
-            loading={actionLoading === confirmModal.userId}
-            icon={confirmModal.icon}
-            onConfirm={executeConfirmAction}
-            onCancel={() => setConfirmModal(null)}
-          />
-        )}
 
         {toast && (
           <div className="toast" style={{
@@ -1050,10 +943,7 @@ export default function UsersPage() {
                 height: 18,
                 borderRadius: "50%",
                 background: "none",
-                borderTopWidth: 0,
-                borderLeftWidth: 0,
-                borderRightWidth: 0,
-                borderBottomWidth: 0,
+                border: "none",
                 color: "#9ca3af",
                 display: "flex",
                 alignItems: "center",
@@ -1103,7 +993,7 @@ export default function UsersPage() {
                     color: "#6b7280",
                     fontFamily: "system-ui",
                   }}>
-                    Actions
+                    View
                   </th>
                 </tr>
               </thead>
@@ -1137,9 +1027,11 @@ export default function UsersPage() {
 
                 {!loading && !error && filtered.map((user, idx) => {
                   const isActive = user.is_active === 1;
+                  const displayName = user.name || (user.first_name && user.last_name                    ? `${user.first_name} ${user.last_name}`
+                    : user.email || "User");
 
                   return (
-                    <tr key={user.id} className="users-tr" style={{
+                    <tr key={user.id || user.user_id} className="users-tr" style={{
                       borderBottom: "1px solid #e5e7eb",
                       transition: "all .2s",
                     }}>
@@ -1159,7 +1051,7 @@ export default function UsersPage() {
                           gap: 8,
                           minWidth: 0,
                         }}>
-                          <Avatar name={user.first_name || user.name} url={user.avatar_url} size={28} />
+                          <Avatar name={displayName} url={user.avatar_url} size={28} />
                           <p style={{
                             fontSize: 13,
                             fontWeight: 500,
@@ -1169,9 +1061,7 @@ export default function UsersPage() {
                             textOverflow: "ellipsis",
                             whiteSpace: "nowrap",
                           }}>
-                            {user.first_name && user.last_name
-                              ? `${user.first_name} ${user.last_name}`
-                              : user.name || user.email}
+                            {displayName}
                           </p>
                         </div>
                       </td>
@@ -1238,96 +1128,13 @@ export default function UsersPage() {
                               <circle cx="12" cy="12" r="3" />
                             </svg>
                           </button>
-
-                          {isActive ? (
-                            <button
-                              onClick={() => handleSuspendUser(user.id)}
-                              disabled={actionLoading === user.id}
-                              title="Suspend user"
-                              style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 6,
-                                border: "1px solid #fed7aa",
-                                background: "#fffbeb",
-                                color: "#92400e",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                cursor: actionLoading === user.id ? "not-allowed" : "pointer",
-                                transition: "all .2s",
-                                opacity: actionLoading === user.id ? 0.5 : 1,
-                              }}
-                              onMouseEnter={(e) => { if (actionLoading !== user.id) e.target.style.background = "#fed7aa"; }}
-                              onMouseLeave={(e) => { e.target.style.background = "#fffbeb"; }}
-                            >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M6 9l12 0M9 5h6M10 14h4M8 19h8a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z" />
-                              </svg>
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleResumeUser(user.id)}
-                              disabled={actionLoading === user.id}
-                              title="Reactivate user"
-                              style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 6,
-                                border: "1px solid #dcfce7",
-                                background: "#f0fdf4",
-                                color: "#166534",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                cursor: actionLoading === user.id ? "not-allowed" : "pointer",
-                                transition: "all .2s",
-                                opacity: actionLoading === user.id ? 0.5 : 1,
-                              }}
-                              onMouseEnter={(e) => { if (actionLoading !== user.id) e.target.style.background = "#dcfce7"; }}
-                              onMouseLeave={(e) => { e.target.style.background = "#f0fdf4"; }}
-                            >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <polyline points="20 6 9 17 4 12" />
-                              </svg>
-                            </button>
-                          )}
-
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            disabled={actionLoading === user.id}
-                            title="Delete user permanently"
-                            style={{
-                              width: 32,
-                              height: 32,
-                              borderRadius: 6,
-                              border: "1px solid #fecaca",
-                              background: "#fef2f2",
-                              color: "#dc2626",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              cursor: actionLoading === user.id ? "not-allowed" : "pointer",
-                              transition: "all .2s",
-                              opacity: actionLoading === user.id ? 0.5 : 1,
-                            }}
-                            onMouseEnter={(e) => { if (actionLoading !== user.id) e.target.style.background = "#fee2e2"; }}
-                            onMouseLeave={(e) => { e.target.style.background = "#fef2f2"; }}
-                          >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                              <polyline points="3 6 5 6 21 6" />
-                              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                              <line x1="10" y1="11" x2="10" y2="17" />
-                              <line x1="14" y1="11" x2="14" y2="17" />
-                            </svg>
-                          </button>
                         </div>
                       </td>
                     </tr>
                   );
                 })}
               </tbody>
-            </table>
+             </table>
 
             {!loading && error && (
               <div style={{
@@ -1346,10 +1153,7 @@ export default function UsersPage() {
                   style={{
                     padding: "8px 16px",
                     borderRadius: 6,
-                    borderTopWidth: 0,
-                    borderLeftWidth: 0,
-                    borderRightWidth: 0,
-                    borderBottomWidth: 0,
+                    border: "none",
                     background: "#3b82f6",
                     color: "#fff",
                     fontSize: 13,
@@ -1403,7 +1207,7 @@ export default function UsersPage() {
             ))}
 
             {!loading && !error && filtered.map((user, idx) => (
-              <MobileUserCard key={user.id} user={user} idx={idx} onView={(u) => setDetailTarget(u)} />
+              <MobileUserCard key={user.id || user.user_id} user={user} idx={idx} onView={(u) => setDetailTarget(u)} />
             ))}
 
             {!loading && !error && filtered.length === 0 && (
@@ -1425,10 +1229,7 @@ export default function UsersPage() {
                   style={{
                     padding: "8px 16px",
                     borderRadius: 6,
-                    borderTopWidth: 0,
-                    borderLeftWidth: 0,
-                    borderRightWidth: 0,
-                    borderBottomWidth: 0,
+                    border: "none",
                     background: "#3b82f6",
                     color: "#fff",
                     fontSize: 12,

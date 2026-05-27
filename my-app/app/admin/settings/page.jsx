@@ -1,128 +1,278 @@
 "use client";
-
-import { useEffect, useState, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import AdminLayout from "@/app/components/AdminLayout";
+import { User, Shield, Phone, Eye, EyeOff, Save, RefreshCw } from "lucide-react";
 
-const BASE_URL = "https://back-end-sawu.onrender.com";
+const API_BASE = "https://back-end-sawu.onrender.com";
 
-export default function AdminSettings() {
-  const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [toast, setToast] = useState(null);
-
-  // Settings State
-  const [settings, setSettings] = useState({
-    // General Settings
-    platform_name: "Food Waste Management",
-    platform_description: "Track and reduce food waste across your organization",
-    support_email: "support@foodwaste.com",
-    support_phone: "+213 550 001 818",
-
-    // Email Settings
-    smtp_host: "smtp.gmail.com",
-    smtp_port: 587,
-    smtp_username: "noreply@foodwaste.com",
-    smtp_password: "",
-    email_from_name: "Food Waste Manager",
-
-    // Security Settings
-    two_factor_enabled: true,
-    password_expiry_days: 90,
-    session_timeout_minutes: 30,
-    max_login_attempts: 5,
-
-    // Notification Settings
-    email_notifications: true,
-    sms_notifications: false,
-    daily_digest: true,
-    weekly_report: true,
-
-    // API Settings
-    api_rate_limit: 1000,
-    api_timeout_seconds: 30,
-    api_key_rotation_days: 90,
-  });
-
-  const [editingSection, setEditingSection] = useState(null);
-  const [unsavedChanges, setUnsavedChanges] = useState(false);
-  const [activeTab, setActiveTab] = useState("general");
-
-  // Utility Functions
-  const getToken = useCallback(() => {
-    if (typeof window === "undefined") return null;
-    return localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
-  }, []);
-
-  const showToast = (msg, type = "success") => {
-    setToast({ msg, type });
-    setTimeout(() => setToast(null), 3500);
-  };
-
-  // Effects
-  useEffect(() => {
-    const token = getToken();
-    if (!token) {
-      router.push("/LoginScreen");
-      return;
-    }
-    setIsAuthenticated(true);
-    // Simulate loading settings
-    setTimeout(() => setLoading(false), 800);
-  }, [getToken, router]);
-
-  // Handlers
-  const handleSettingChange = (key, value) => {
-    setSettings((prev) => ({ ...prev, [key]: value }));
-    setUnsavedChanges(true);
-  };
-
-  const handleSaveSettings = async () => {
-    const token = getToken();
-    if (!token) {
-      showToast("No token found. Please login again.", "error");
-      return;
-    }
-
-    try {
-      // In a real app, this would call the API
-      // const res = await fetch(`${BASE_URL}/admin/settings`, {
-      //   method: "POST",
-      //   headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-      //   body: JSON.stringify(settings),
-      // });
-
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      showToast("Settings saved successfully", "success");
-      setUnsavedChanges(false);
-      setEditingSection(null);
-    } catch (err) {
-      showToast(err.message || "Failed to save settings", "error");
-    }
-  };
-
-  const handleResetSettings = () => {
-    // Reset to previous state
-    setUnsavedChanges(false);
-    setEditingSection(null);
-  };
-
-  // Render States
-  if (!isAuthenticated) {
-    return <div className="min-h-screen bg-[#f5f5f0] w-full" />;
+// Improved token and user retrieval with validation
+const getToken = () => {
+  const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+  if (!token) {
+    console.warn("No token found in storage");
+    return null;
   }
+  return token;
+};
 
-  if (loading) {
+const getStoredUser = () => {
+  try {
+    const userStr = localStorage.getItem("user") || sessionStorage.getItem("user");
+    if (!userStr) return null;
+    return JSON.parse(userStr);
+  } catch (error) {
+    console.error("Error parsing stored user:", error);
+    return null;
+  }
+};
+
+export default function Settings() {
+  const router = useRouter();
+  const [profile, setProfile] = useState({ name: "", email: "", phone: "", wilaya: "" });
+  const [originalProfile, setOriginalProfile] = useState({});
+  const [userId, setUserId] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [profileMsg, setProfileMsg] = useState(null);
+  const [countryCode, setCountryCode] = useState("+213");
+
+  const [passwords, setPasswords] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirm_password: "",
+  });
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+  const [passwordLoading, setPasswordLoading] = useState(false);
+  const [passwordMsg, setPasswordMsg] = useState(null);
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const token = getToken();
+    if (!token) {
+      router.push("/login");
+      return;
+    }
+
+    const user = getStoredUser();
+    if (!user || (!user.id && !user._id)) {
+      console.error("No user ID found in storage");
+      router.push("/login");
+      return;
+    }
+    
+    setUserId(user.id || user._id);
+    
+    // Parse phone number to extract country code if it exists
+    let phoneNumber = user.phone || "";
+    let extractedCode = "+213";
+    let extractedNumber = phoneNumber;
+    
+    if (phoneNumber.startsWith("+")) {
+      // Try to extract country code (assume codes are 3-4 digits)
+      const match = phoneNumber.match(/^(\+\d{1,4})(.*)$/);
+      if (match) {
+        extractedCode = match[1];
+        extractedNumber = match[2].trim();
+      }
+    }
+    
+    setCountryCode(extractedCode);
+    
+    const userProfile = {
+      name: user.name || "",
+      email: user.email || "",
+      phone: extractedNumber,
+      wilaya: user.wilaya || "",
+    };
+    setProfile(userProfile);
+    setOriginalProfile(userProfile);
+  }, [router]);
+
+  const handleProfileSave = async () => {
+    const token = getToken();
+    if (!token) {
+      setProfileMsg({ type: "error", text: "Session expired. Please login again." });
+      setTimeout(() => router.push("/login"), 2000);
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (profile.email && !emailRegex.test(profile.email)) {
+      setProfileMsg({ type: "error", text: "Please enter a valid email address." });
+      return;
+    }
+
+    setProfileLoading(true);
+    setProfileMsg(null);
+    
+    // Build update object with only fields that have changed
+    const updateData = {};
+    if (profile.name && profile.name.trim() !== originalProfile.name) {
+      updateData.name = profile.name.trim();
+    }
+    if (profile.email && profile.email.trim() !== originalProfile.email) {
+      updateData.email = profile.email.trim();
+    }
+    
+    // Combine country code with phone number
+    const fullPhoneNumber = profile.phone ? `${countryCode}${profile.phone.trim()}` : "";
+    if (fullPhoneNumber !== (originalProfile.phone ? `${countryCode}${originalProfile.phone}` : "")) {
+      updateData.phone = fullPhoneNumber;
+    }
+    
+    if (profile.wilaya && profile.wilaya.trim() !== originalProfile.wilaya) {
+      updateData.wilaya = profile.wilaya.trim();
+    }
+    
+    if (Object.keys(updateData).length === 0) {
+      setProfileMsg({ type: "error", text: "No changes to update." });
+      setProfileLoading(false);
+      return;
+    }
+    
+    try {
+      console.log("Updating profile with data:", updateData);
+      console.log("User ID:", userId);
+      console.log("Full URL:", `${API_BASE}/admin/update/${userId}`);
+      
+      const response = await fetch(`${API_BASE}/admin/update/${userId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify(updateData),
+      });
+      
+      console.log("Response status:", response.status);
+      
+      // Try to get the response text
+      const responseText = await response.text();
+      console.log("Response raw:", responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        console.error("Failed to parse JSON:", e);
+        data = { message: responseText || "Unknown error" };
+      }
+      
+      if (!response.ok) {
+        if (response.status === 400) {
+          throw new Error(data.message || "Invalid data. Please check your email format.");
+        } else if (response.status === 401) {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("user");
+          sessionStorage.removeItem("accessToken");
+          sessionStorage.removeItem("user");
+          throw new Error("Session expired. Please login again.");
+        } else if (response.status === 409) {
+          throw new Error("Email already exists. Please use a different email address.");
+        } else {
+          throw new Error(data.message || `Server error: ${response.status}`);
+        }
+      }
+      
+      // Update storage with new data
+      const storage = localStorage.getItem("user") ? localStorage : sessionStorage;
+      const stored = getStoredUser();
+      if (stored) {
+        const updatedUser = { ...stored, ...updateData };
+        storage.setItem("user", JSON.stringify(updatedUser));
+        setOriginalProfile({ ...profile });
+      }
+      
+      setProfileMsg({ type: "success", text: "Profile updated successfully!" });
+      
+      // Clear success message after 3 seconds
+      setTimeout(() => setProfileMsg(null), 3000);
+    } catch (err) {
+      console.error("Profile update error:", err);
+      setProfileMsg({ type: "error", text: err.message || "Failed to update profile. Please try again." });
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  const handlePasswordUpdate = async () => {
+    const token = getToken();
+    if (!token) {
+      setPasswordMsg({ type: "error", text: "Session expired. Please login again." });
+      setTimeout(() => router.push("/login"), 2000);
+      return;
+    }
+
+    if (passwords.newPassword !== passwords.confirm_password) {
+      setPasswordMsg({ type: "error", text: "New passwords do not match." });
+      return;
+    }
+    if (passwords.newPassword.length < 8) {
+      setPasswordMsg({ type: "error", text: "New password must be at least 8 characters." });
+      return;
+    }
+    if (!passwords.currentPassword) {
+      setPasswordMsg({ type: "error", text: "Current password is required." });
+      return;
+    }
+    
+    setPasswordLoading(true);
+    setPasswordMsg(null);
+    
+    try {
+      const response = await fetch(`${API_BASE}/auth/web/changepassword`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          currentPassword: passwords.currentPassword,
+          newPassword: passwords.newPassword,
+          confirm_password: passwords.confirm_password,
+        }),
+      });
+      
+      const responseText = await response.text();
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+      } catch (e) {
+        data = { message: responseText };
+      }
+      
+      if (response.status === 401) {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("user");
+        sessionStorage.removeItem("accessToken");
+        sessionStorage.removeItem("user");
+        throw new Error("Session expired. Please login again.");
+      }
+      
+      if (!response.ok) throw new Error(data.message || "Failed to update password");
+      
+      setPasswordMsg({ type: "success", text: "Password updated successfully!" });
+      setPasswords({ currentPassword: "", newPassword: "", confirm_password: "" });
+      
+      setTimeout(() => setPasswordMsg(null), 3000);
+    } catch (err) {
+      console.error("Password update error:", err);
+      setPasswordMsg({ type: "error", text: err.message || "Failed to update password." });
+    } finally {
+      setPasswordLoading(false);
+    }
+  };
+
+  // Don't render if no userId (will redirect)
+  if (!userId) {
     return (
       <AdminLayout>
-        <div className="min-h-screen w-full flex items-center justify-center bg-[#f4f6fb]">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-9 h-9 border-4 border-[#1a1f5e] border-t-transparent rounded-full animate-spin" />
-            <p className="text-gray-400 text-sm font-medium">Loading settings...</p>
+        <div style={styles.page}>
+          <div style={styles.card}>
+            <p>Loading...</p>
           </div>
         </div>
       </AdminLayout>
@@ -131,420 +281,341 @@ export default function AdminSettings() {
 
   return (
     <AdminLayout>
-      <div className="min-h-screen w-full bg-[#f4f6fb] p-6">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-[28px] font-bold text-[#1a1f5e] tracking-tight">Settings</h1>
-          <p className="text-gray-400 mt-1 text-sm">Manage platform configuration and preferences.</p>
+      <div style={styles.page}>
+        <div style={styles.header}>
+          <h1 style={styles.title}>Account Settings</h1>
+          <p style={styles.subtitle}>Manage your personal information and security preferences.</p>
         </div>
 
-        <div className="flex gap-6">
-          {/* Sidebar Navigation */}
-          <div className="w-64 flex-shrink-0">
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-6">
-              <nav className="divide-y divide-gray-100">
-                {[
-                  { id: "general", label: "General Settings", icon: "⚙️" },
-                  { id: "email", label: "Email Configuration", icon: "✉️" },
-                  { id: "security", label: "Security Settings", icon: "🔒" },
-                  { id: "notifications", label: "Notifications", icon: "🔔" },
-                  { id: "api", label: "API Settings", icon: "🔌" },
-                ].map(({ id, label, icon }) => (
-                  <button
-                    key={id}
-                    onClick={() => setActiveTab(id)}
-                    className={`w-full px-5 py-3.5 text-left text-sm font-medium transition-all ${
-                      activeTab === id
-                        ? "bg-[#1a1f5e]/5 text-[#1a1f5e] border-l-2 border-[#1a1f5e]"
-                        : "text-gray-600 hover:bg-gray-50 border-l-2 border-transparent"
-                    }`}
-                  >
-                    <span className="mr-2">{icon}</span>
-                    {label}
-                  </button>
-                ))}
-              </nav>
+        {/* Profile Information Card */}
+        <div style={styles.card}>
+          <div style={styles.cardHeader}>
+            <User size={20} color="#1e2d6b" />
+            <h2 style={styles.cardTitle}>Profile Information</h2>
+          </div>
+
+          <div style={styles.fieldRow}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Username</label>
+              <input
+                style={styles.input}
+                value={profile.name}
+                onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+                placeholder="Username"
+              />
+            </div>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Email Address</label>
+              <input
+                style={styles.input}
+                value={profile.email}
+                onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+                placeholder="Email"
+                type="email"
+              />
             </div>
           </div>
 
-          {/* Content Area */}
-          <div className="flex-1 space-y-6">
-            {/* General Settings */}
-            {activeTab === "general" && (
-              <SettingsSection
-                title="General Settings"
-                description="Configure basic platform information"
-                fields={[
-                  { key: "platform_name", label: "Platform Name", type: "text" },
-                  { key: "platform_description", label: "Platform Description", type: "textarea" },
-                  { key: "support_email", label: "Support Email", type: "email" },
-                  { key: "support_phone", label: "Support Phone", type: "tel" },
-                ]}
-                settings={settings}
-                onChange={handleSettingChange}
-                isEditing={editingSection === "general"}
-                onEdit={() => setEditingSection("general")}
-                onSave={handleSaveSettings}
-                onCancel={handleResetSettings}
-                unsavedChanges={unsavedChanges}
+          <div style={styles.fieldRow}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Phone</label>
+              <input
+                style={styles.input}
+                value={profile.phone}
+                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                placeholder="Phone number (optional)"
               />
-            )}
-
-            {/* Email Settings */}
-            {activeTab === "email" && (
-              <SettingsSection
-                title="Email Configuration"
-                description="Configure SMTP settings for email notifications"
-                fields={[
-                  { key: "smtp_host", label: "SMTP Host", type: "text" },
-                  { key: "smtp_port", label: "SMTP Port", type: "number" },
-                  { key: "smtp_username", label: "SMTP Username", type: "text" },
-                  { key: "smtp_password", label: "SMTP Password", type: "password" },
-                  { key: "email_from_name", label: "From Name", type: "text" },
-                ]}
-                settings={settings}
-                onChange={handleSettingChange}
-                isEditing={editingSection === "email"}
-                onEdit={() => setEditingSection("email")}
-                onSave={handleSaveSettings}
-                onCancel={handleResetSettings}
-                unsavedChanges={unsavedChanges}
+            </div>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Wilaya</label>
+              <input
+                style={styles.input}
+                value={profile.wilaya}
+                onChange={(e) => setProfile({ ...profile, wilaya: e.target.value })}
+                placeholder="Wilaya (optional)"
               />
-            )}
+            </div>
+          </div>
 
-            {/* Security Settings */}
-            {activeTab === "security" && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="px-6 py-5 border-b border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-900">Security Settings</h2>
-                    <p className="text-sm text-gray-400 mt-1">Manage security policies and configurations</p>
-                  </div>
+          {profileMsg && (
+            <p style={profileMsg.type === "success" ? styles.successMsg : styles.errorMsg}>
+              {profileMsg.text}
+            </p>
+          )}
 
-                  <div className="p-6 space-y-6">
-                    {/* Two-Factor Authentication */}
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Two-Factor Authentication</h3>
-                        <p className="text-sm text-gray-500 mt-1">Require 2FA for all admin accounts</p>
-                      </div>
-                      <button
-                        onClick={() => handleSettingChange("two_factor_enabled", !settings.two_factor_enabled)}
-                        className={`relative w-14 h-8 rounded-full transition-colors ${
-                          settings.two_factor_enabled ? "bg-emerald-500" : "bg-gray-300"
-                        }`}
-                      >
-                        <div
-                          className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${
-                            settings.two_factor_enabled ? "translate-x-6" : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    {/* Password Expiry */}
-                    <div className="border-t border-gray-100 pt-6">
-                      <label className="block text-sm font-bold text-gray-700 mb-2">
-                        Password Expiry (days)
-                      </label>
-                      <input
-                        type="number"
-                        value={settings.password_expiry_days}
-                        onChange={(e) => handleSettingChange("password_expiry_days", parseInt(e.target.value))}
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1f5e]/15 focus:border-[#1a1f5e]"
-                      />
-                      <p className="text-xs text-gray-400 mt-2">Users must change password every {settings.password_expiry_days} days</p>
-                    </div>
-
-                    {/* Session Timeout */}
-                    <div className="border-t border-gray-100 pt-6">
-                      <label className="block text-sm font-bold text-gray-700 mb-2">
-                        Session Timeout (minutes)
-                      </label>
-                      <input
-                        type="number"
-                        value={settings.session_timeout_minutes}
-                        onChange={(e) => handleSettingChange("session_timeout_minutes", parseInt(e.target.value))}
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1f5e]/15 focus:border-[#1a1f5e]"
-                      />
-                      <p className="text-xs text-gray-400 mt-2">Sessions expire after {settings.session_timeout_minutes} minutes of inactivity</p>
-                    </div>
-
-                    {/* Max Login Attempts */}
-                    <div className="border-t border-gray-100 pt-6">
-                      <label className="block text-sm font-bold text-gray-700 mb-2">
-                        Max Login Attempts
-                      </label>
-                      <input
-                        type="number"
-                        value={settings.max_login_attempts}
-                        onChange={(e) => handleSettingChange("max_login_attempts", parseInt(e.target.value))}
-                        className="w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#1a1f5e]/15 focus:border-[#1a1f5e]"
-                      />
-                      <p className="text-xs text-gray-400 mt-2">Lock account after {settings.max_login_attempts} failed attempts</p>
-                    </div>
-
-                    {/* Save Button */}
-                    {unsavedChanges && (
-                      <div className="border-t border-gray-100 pt-6 flex gap-3">
-                        <button
-                          onClick={handleSaveSettings}
-                          className="flex-1 px-4 py-2.5 bg-[#1a1f5e] text-white rounded-lg font-semibold hover:bg-[#141852] transition-colors"
-                        >
-                          Save Changes
-                        </button>
-                        <button
-                          onClick={handleResetSettings}
-                          className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Notifications Settings */}
-            {activeTab === "notifications" && (
-              <div className="space-y-6">
-                <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                  <div className="px-6 py-5 border-b border-gray-100">
-                    <h2 className="text-lg font-bold text-gray-900">Notification Preferences</h2>
-                    <p className="text-sm text-gray-400 mt-1">Configure notification channels and frequency</p>
-                  </div>
-
-                  <div className="p-6 space-y-6">
-                    {/* Email Notifications */}
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Email Notifications</h3>
-                        <p className="text-sm text-gray-500 mt-1">Send notifications via email</p>
-                      </div>
-                      <button
-                        onClick={() => handleSettingChange("email_notifications", !settings.email_notifications)}
-                        className={`relative w-14 h-8 rounded-full transition-colors ${
-                          settings.email_notifications ? "bg-emerald-500" : "bg-gray-300"
-                        }`}
-                      >
-                        <div
-                          className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${
-                            settings.email_notifications ? "translate-x-6" : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    {/* SMS Notifications */}
-                    <div className="border-t border-gray-100 pt-6 flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">SMS Notifications</h3>
-                        <p className="text-sm text-gray-500 mt-1">Send critical alerts via SMS</p>
-                      </div>
-                      <button
-                        onClick={() => handleSettingChange("sms_notifications", !settings.sms_notifications)}
-                        className={`relative w-14 h-8 rounded-full transition-colors ${
-                          settings.sms_notifications ? "bg-emerald-500" : "bg-gray-300"
-                        }`}
-                      >
-                        <div
-                          className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${
-                            settings.sms_notifications ? "translate-x-6" : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    {/* Daily Digest */}
-                    <div className="border-t border-gray-100 pt-6 flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Daily Digest</h3>
-                        <p className="text-sm text-gray-500 mt-1">Send daily summary at 9:00 AM</p>
-                      </div>
-                      <button
-                        onClick={() => handleSettingChange("daily_digest", !settings.daily_digest)}
-                        className={`relative w-14 h-8 rounded-full transition-colors ${
-                          settings.daily_digest ? "bg-emerald-500" : "bg-gray-300"
-                        }`}
-                      >
-                        <div
-                          className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${
-                            settings.daily_digest ? "translate-x-6" : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    {/* Weekly Report */}
-                    <div className="border-t border-gray-100 pt-6 flex items-start justify-between">
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Weekly Report</h3>
-                        <p className="text-sm text-gray-500 mt-1">Send weekly analytics report on Monday</p>
-                      </div>
-                      <button
-                        onClick={() => handleSettingChange("weekly_report", !settings.weekly_report)}
-                        className={`relative w-14 h-8 rounded-full transition-colors ${
-                          settings.weekly_report ? "bg-emerald-500" : "bg-gray-300"
-                        }`}
-                      >
-                        <div
-                          className={`absolute top-1 left-1 w-6 h-6 bg-white rounded-full transition-transform ${
-                            settings.weekly_report ? "translate-x-6" : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                    </div>
-
-                    {/* Save Button */}
-                    {unsavedChanges && (
-                      <div className="border-t border-gray-100 pt-6 flex gap-3">
-                        <button
-                          onClick={handleSaveSettings}
-                          className="flex-1 px-4 py-2.5 bg-[#1a1f5e] text-white rounded-lg font-semibold hover:bg-[#141852] transition-colors"
-                        >
-                          Save Changes
-                        </button>
-                        <button
-                          onClick={handleResetSettings}
-                          className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* API Settings */}
-            {activeTab === "api" && (
-              <SettingsSection
-                title="API Configuration"
-                description="Manage API access and rate limiting"
-                fields={[
-                  { key: "api_rate_limit", label: "Rate Limit (requests/hour)", type: "number" },
-                  { key: "api_timeout_seconds", label: "Request Timeout (seconds)", type: "number" },
-                  { key: "api_key_rotation_days", label: "API Key Rotation (days)", type: "number" },
-                ]}
-                settings={settings}
-                onChange={handleSettingChange}
-                isEditing={editingSection === "api"}
-                onEdit={() => setEditingSection("api")}
-                onSave={handleSaveSettings}
-                onCancel={handleResetSettings}
-                unsavedChanges={unsavedChanges}
-              />
-            )}
+          <div style={styles.actionRow}>
+            <button
+              style={profileLoading ? { ...styles.btnPrimary, ...styles.btnDisabled } : styles.btnPrimary}
+              onClick={handleProfileSave}
+              disabled={profileLoading}
+            >
+              {profileLoading ? <RefreshCw size={16} style={styles.spin} /> : <Save size={16} />}
+              <span>{profileLoading ? "Saving..." : "Save Changes"}</span>
+            </button>
           </div>
         </div>
 
-        {/* Toast Notification */}
-        {toast && (
-          <div
-            className={`fixed bottom-6 right-6 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl shadow-xl text-sm font-medium transition-all ${
-              toast.type === "success" ? "bg-emerald-600 text-white" : "bg-rose-600 text-white"
-            }`}
-          >
-            {toast.type === "success" ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-              </svg>
-            )}
-            {toast.msg}
+        {/* Security Card */}
+        <div style={styles.card}>
+          <div style={styles.cardHeader}>
+            <Shield size={20} color="#1e2d6b" />
+            <h2 style={styles.cardTitle}>Security</h2>
           </div>
-        )}
+
+          <div style={styles.fieldRow}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Current Password</label>
+              <div style={styles.inputWrap}>
+                <input
+                  style={styles.inputWithIcon}
+                  type={showCurrent ? "text" : "password"}
+                  value={passwords.currentPassword}
+                  onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
+                  placeholder="Current password"
+                />
+                <button style={styles.eyeBtn} onClick={() => setShowCurrent(!showCurrent)} type="button">
+                  {showCurrent ? <EyeOff size={18} color="#94a3b8" /> : <Eye size={18} color="#94a3b8" />}
+                </button>
+              </div>
+            </div>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>New Password</label>
+              <div style={styles.inputWrap}>
+                <input
+                  style={styles.inputWithIcon}
+                  type={showNew ? "text" : "password"}
+                  value={passwords.newPassword}
+                  onChange={(e) => setPasswords({ ...passwords, newPassword: e.target.value })}
+                  placeholder="Minimum 8 characters"
+                />
+                <button style={styles.eyeBtn} onClick={() => setShowNew(!showNew)} type="button">
+                  {showNew ? <EyeOff size={18} color="#94a3b8" /> : <Eye size={18} color="#94a3b8" />}
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div style={{ ...styles.fieldRow, maxWidth: "50%" }}>
+            <div style={styles.fieldGroup}>
+              <label style={styles.label}>Confirm New Password</label>
+              <input
+                style={styles.input}
+                type="password"
+                value={passwords.confirm_password}
+                onChange={(e) => setPasswords({ ...passwords, confirm_password: e.target.value })}
+                placeholder="Confirm new password"
+              />
+            </div>
+          </div>
+
+          {passwordMsg && (
+            <p style={passwordMsg.type === "success" ? styles.successMsg : styles.errorMsg}>
+              {passwordMsg.text}
+            </p>
+          )}
+
+          <div style={styles.actionRow}>
+            <button
+              style={passwordLoading ? { ...styles.btnOutline, ...styles.btnDisabled } : styles.btnOutline}
+              onClick={handlePasswordUpdate}
+              disabled={passwordLoading}
+            >
+              {passwordLoading ? <RefreshCw size={16} style={styles.spin} /> : null}
+              <span>{passwordLoading ? "Updating..." : "Update Password"}</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Contact Information Card */}
+        <div style={styles.card}>
+          <div style={styles.cardHeader}>
+            <Phone size={20} color="#1e2d6b" />
+            <h2 style={styles.cardTitle}>Contact Information</h2>
+          </div>
+
+          <div style={{ maxWidth: "50%" }}>
+            <label style={styles.label}>Phone Number</label>
+            <div style={styles.phoneRow}>
+              <select 
+                style={styles.select} 
+                value={countryCode}
+                onChange={(e) => setCountryCode(e.target.value)}
+              >
+                <option value="+213">+213 (Algeria)</option>
+                <option value="+1">+1 (USA/Canada)</option>
+                <option value="+33">+33 (France)</option>
+                <option value="+44">+44 (UK)</option>
+                <option value="+49">+49 (Germany)</option>
+                <option value="+34">+34 (Spain)</option>
+                <option value="+39">+39 (Italy)</option>
+                <option value="+971">+971 (UAE)</option>
+                <option value="+966">+966 (Saudi Arabia)</option>
+                <option value="+20">+20 (Egypt)</option>
+                <option value="+212">+212 (Morocco)</option>
+                <option value="+216">+216 (Tunisia)</option>
+              </select>
+              <input
+                style={{ ...styles.input, flex: 1 }}
+                value={profile.phone}
+                onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
+                placeholder="Phone number (e.g., 555123456)"
+              />
+            </div>
+            <small style={{ color: "#64748b", fontSize: 12, marginTop: 4 }}>
+              Example: 555123456 will be saved as {countryCode}555123456
+            </small>
+          </div>
+
+          <div style={styles.actionRow}>
+            <button
+              style={profileLoading ? { ...styles.btnPrimary, ...styles.btnDisabled } : styles.btnPrimary}
+              onClick={handleProfileSave}
+              disabled={profileLoading}
+            >
+              {profileLoading ? <RefreshCw size={16} style={styles.spin} /> : <Save size={16} />}
+              <span>{profileLoading ? "Updating..." : "Update Contact"}</span>
+            </button>
+          </div>
+        </div>
       </div>
+
+      <style>{`
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      `}</style>
     </AdminLayout>
   );
 }
 
-// Reusable Settings Section Component
-function SettingsSection({
-  title,
-  description,
-  fields,
-  settings,
-  onChange,
-  isEditing,
-  onEdit,
-  onSave,
-  onCancel,
-  unsavedChanges,
-}) {
-  return (
-    <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-      <div className="px-6 py-5 border-b border-gray-100 flex items-start justify-between">
-        <div>
-          <h2 className="text-lg font-bold text-gray-900">{title}</h2>
-          <p className="text-sm text-gray-400 mt-1">{description}</p>
-        </div>
-        {!isEditing && !unsavedChanges && (
-          <button
-            onClick={onEdit}
-            className="px-4 py-2 text-sm font-semibold text-[#1a1f5e] hover:bg-[#1a1f5e]/5 rounded-lg transition-colors"
-          >
-            Edit
-          </button>
-        )}
-      </div>
-
-      <div className="p-6">
-        <div className="space-y-6">
-          {fields.map(({ key, label, type }) => (
-            <div key={key}>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">{label}</label>
-              {type === "textarea" ? (
-                <textarea
-                  value={settings[key] || ""}
-                  onChange={(e) => onChange(key, e.target.value)}
-                  disabled={!isEditing}
-                  rows={3}
-                  className={`w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm transition-all ${
-                    isEditing
-                      ? "bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1f5e]/15 focus:border-[#1a1f5e]"
-                      : "bg-gray-50 text-gray-600 cursor-not-allowed"
-                  }`}
-                />
-              ) : (
-                <input
-                  type={type}
-                  value={settings[key] || ""}
-                  onChange={(e) => onChange(key, e.target.value)}
-                  disabled={!isEditing}
-                  className={`w-full px-4 py-2.5 border border-gray-200 rounded-lg text-sm transition-all ${
-                    isEditing
-                      ? "bg-white focus:outline-none focus:ring-2 focus:ring-[#1a1f5e]/15 focus:border-[#1a1f5e]"
-                      : "bg-gray-50 text-gray-600 cursor-not-allowed"
-                  }`}
-                />
-              )}
-            </div>
-          ))}
-        </div>
-
-        {unsavedChanges && (
-          <div className="border-t border-gray-100 mt-6 pt-6 flex gap-3">
-            <button
-              onClick={onSave}
-              className="flex-1 px-4 py-2.5 bg-[#1a1f5e] text-white rounded-lg font-semibold hover:bg-[#141852] transition-colors"
-            >
-              Save Changes
-            </button>
-            <button
-              onClick={onCancel}
-              className="flex-1 px-4 py-2.5 border border-gray-200 text-gray-600 rounded-lg font-semibold hover:bg-gray-50 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+const styles = {
+  page: {
+    padding: "32px 24px",
+    maxWidth: 900,
+    margin: "0 auto",
+    display: "flex",
+    flexDirection: "column",
+    gap: 24,
+    fontFamily: "'Segoe UI', system-ui, sans-serif",
+  },
+  header: { marginBottom: 4 },
+  title: { fontSize: 28, fontWeight: 700, color: "#1e2d6b", margin: 0 },
+  subtitle: { fontSize: 14, color: "#64748b", marginTop: 6 },
+  card: {
+    background: "#ffffff",
+    border: "1px solid #e8edf5",
+    borderRadius: 16,
+    padding: "28px 32px",
+    boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+    display: "flex",
+    flexDirection: "column",
+    gap: 20,
+  },
+  cardHeader: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    paddingBottom: 4,
+    borderBottom: "1px solid #f1f5f9",
+  },
+  cardTitle: { fontSize: 18, fontWeight: 600, color: "#1e2d6b", margin: 0 },
+  fieldRow: { display: "flex", gap: 20, flexWrap: "wrap" },
+  fieldGroup: {
+    flex: 1,
+    minWidth: 200,
+    display: "flex",
+    flexDirection: "column",
+    gap: 6,
+  },
+  label: { fontSize: 13, fontWeight: 500, color: "#374151" },
+  input: {
+    padding: "10px 14px",
+    border: "1.5px solid #e2e8f0",
+    borderRadius: 8,
+    fontSize: 14,
+    color: "#1e293b",
+    background: "#f8fafc",
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box",
+  },
+  inputWrap: { position: "relative", display: "flex", alignItems: "center" },
+  inputWithIcon: {
+    padding: "10px 40px 10px 14px",
+    border: "1.5px solid #e2e8f0",
+    borderRadius: 8,
+    fontSize: 14,
+    color: "#1e293b",
+    background: "#f8fafc",
+    outline: "none",
+    width: "100%",
+    boxSizing: "border-box",
+  },
+  eyeBtn: {
+    position: "absolute",
+    right: 12,
+    background: "none",
+    border: "none",
+    cursor: "pointer",
+    padding: 0,
+    display: "flex",
+    alignItems: "center",
+  },
+  phoneRow: { display: "flex", gap: 10 },
+  select: {
+    padding: "10px 12px",
+    border: "1.5px solid #e2e8f0",
+    borderRadius: 8,
+    fontSize: 14,
+    color: "#1e293b",
+    background: "#f8fafc",
+    outline: "none",
+    cursor: "pointer",
+    minWidth: 120,
+  },
+  actionRow: { display: "flex", justifyContent: "flex-end", paddingTop: 4 },
+  btnPrimary: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "10px 22px",
+    background: "#1e2d6b",
+    color: "#fff",
+    border: "none",
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  btnOutline: {
+    display: "flex",
+    alignItems: "center",
+    gap: 8,
+    padding: "10px 22px",
+    background: "#fff",
+    color: "#1e2d6b",
+    border: "1.5px solid #1e2d6b",
+    borderRadius: 8,
+    fontSize: 14,
+    fontWeight: 600,
+    cursor: "pointer",
+  },
+  btnDisabled: { opacity: 0.6, cursor: "not-allowed" },
+  successMsg: {
+    color: "#16a34a",
+    fontSize: 13,
+    margin: 0,
+    padding: "8px 12px",
+    background: "#f0fdf4",
+    borderRadius: 6,
+    border: "1px solid #bbf7d0",
+  },
+  errorMsg: {
+    color: "#dc2626",
+    fontSize: 13,
+    margin: 0,
+    padding: "8px 12px",
+    background: "#fef2f2",
+    borderRadius: 6,
+    border: "1px solid #fecaca",
+  },
+  spin: { animation: "spin 1s linear infinite" },
+};
