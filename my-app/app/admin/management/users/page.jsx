@@ -63,15 +63,13 @@ function TagPill({ label, color = "blue" }) {
 function BadgeCard({ badge, type = "permanent" }) {
   const isPermanent = type === "permanent";
   return (
-    <div className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${
-      isPermanent
+    <div className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${isPermanent
         ? "bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-100"
         : "bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-100"
-    }`}>
-      {/* Badge Icon */}
-      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg shadow-sm ${
-        isPermanent ? "bg-amber-100" : "bg-blue-100"
       }`}>
+      {/* Badge Icon */}
+      <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-lg shadow-sm ${isPermanent ? "bg-amber-100" : "bg-blue-100"
+        }`}>
         {badge.icon || (isPermanent ? "🏅" : "🌟")}
       </div>
       <div className="min-w-0 flex-1">
@@ -88,9 +86,8 @@ function BadgeCard({ badge, type = "permanent" }) {
         )}
       </div>
       {/* Type indicator */}
-      <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full flex-shrink-0 ${
-        isPermanent ? "bg-amber-200/70 text-amber-700" : "bg-blue-200/70 text-blue-700"
-      }`}>
+      <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full flex-shrink-0 ${isPermanent ? "bg-amber-200/70 text-amber-700" : "bg-blue-200/70 text-blue-700"
+        }`}>
         {isPermanent ? "Perm" : "Monthly"}
       </span>
     </div>
@@ -125,7 +122,7 @@ function UserDetailSidebar({ user, isOpen, onClose }) {
       .then((data) => {
         if (data?.success && data?.user) setDetailData(data.user);
       })
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setDetailLoading(false));
   }, [isOpen, user]);
 
@@ -638,9 +635,9 @@ export default function UsersPage() {
     const url = `${BASE_URL}/admin/${action}/${targetId}`;
     const res = await fetch(url, {
       method: "PATCH",
-      headers: { 
-        Authorization: `Bearer ${token}`, 
-        "Content-Type": "application/json" 
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
       },
       body: body ? JSON.stringify(body) : undefined,
     });
@@ -655,7 +652,7 @@ export default function UsersPage() {
     setTogglingId(targetId);
     try {
       const res = await tryToggle(token, targetId, "deactivate", { reason, notify_email: true });
-      
+
       if (res.status === 401) { router.push("/LoginScreen"); return; }
       if (!res.ok) {
         let errMsg = "Failed to suspend user";
@@ -688,7 +685,7 @@ export default function UsersPage() {
     setTogglingId(targetId);
     try {
       const res = await tryToggle(token, targetId, "activate");
-      
+
       if (res.status === 401) { router.push("/LoginScreen"); return; }
       if (!res.ok) {
         let errMsg = "Failed to activate user";
@@ -802,18 +799,26 @@ export default function UsersPage() {
         {/* Stats Cards — 4 cards now including Food Savers */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
-            { label: "Total Users", value: totalUsers, color: "text-[#1a1f5e]", bg: "bg-[#1a1f5e]/5", icon: (
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-            )},
-            { label: "Active Now", value: activeNow, color: "text-emerald-600", bg: "bg-emerald-50", icon: (
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            )},
-            { label: "Suspended", value: suspendedCount, color: "text-rose-600", bg: "bg-rose-50", icon: (
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-            )},
-            { label: "Food Savers", value: foodSavers, color: "text-amber-600", bg: "bg-amber-50", icon: (
-              <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
-            )},
+            {
+              label: "Total Users", value: totalUsers, color: "text-[#1a1f5e]", bg: "bg-[#1a1f5e]/5", icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-[#1a1f5e]" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+              )
+            },
+            {
+              label: "Active Now", value: activeNow, color: "text-emerald-600", bg: "bg-emerald-50", icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              )
+            },
+            {
+              label: "Suspended", value: suspendedCount, color: "text-rose-600", bg: "bg-rose-50", icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+              )
+            },
+            {
+              label: "Food Savers", value: foodSavers, color: "text-amber-600", bg: "bg-amber-50", icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" /></svg>
+              )
+            },
           ].map(({ label, value, color, bg, icon }) => (
             <div key={label} className="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 flex items-center gap-4">
               <div className={`w-10 h-10 rounded-xl ${bg} flex items-center justify-center flex-shrink-0`}>

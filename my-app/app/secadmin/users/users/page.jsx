@@ -317,53 +317,53 @@ function Avatar({ name, url, size = 32 }) {
 function DetailDrawer({ user, onClose, isMobile }) {
   const panelStyle = isMobile
     ? {
-        position: "fixed",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 50,
-        maxHeight: "88vh",
-        background: "#fff",
-        borderTop: "1px solid #e5e7eb",
-        borderRadius: "20px 20px 0 0",
-        boxShadow: "0 -10px 40px rgba(0,0,0,0.1)",
-        display: "flex",
-        flexDirection: "column",
-        animation: "sheetUp .3s ease-out forwards",
-      }
+      position: "fixed",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 50,
+      maxHeight: "88vh",
+      background: "#fff",
+      borderTop: "1px solid #e5e7eb",
+      borderRadius: "20px 20px 0 0",
+      boxShadow: "0 -10px 40px rgba(0,0,0,0.1)",
+      display: "flex",
+      flexDirection: "column",
+      animation: "sheetUp .3s ease-out forwards",
+    }
     : {
-        position: "fixed",
-        top: 0,
-        right: 0,
-        bottom: 0,
-        width: 420,
-        zIndex: 50,
-        background: "#fff",
-        borderLeft: "1px solid #e5e7eb",
-        boxShadow: "-10px 0 40px rgba(0,0,0,0.08)",
-        display: "flex",
-        flexDirection: "column",
-        animation: "drawerIn .3s ease-out forwards",
-      };
+      position: "fixed",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: 420,
+      zIndex: 50,
+      background: "#fff",
+      borderLeft: "1px solid #e5e7eb",
+      boxShadow: "-10px 0 40px rgba(0,0,0,0.08)",
+      display: "flex",
+      flexDirection: "column",
+      animation: "drawerIn .3s ease-out forwards",
+    };
 
   const backdropStyle = isMobile
     ? {
-        position: "fixed",
-        inset: 0,
-        zIndex: 40,
-        background: "rgba(0,0,0,0.3)",
-        backdropFilter: "blur(2px)",
-      }
+      position: "fixed",
+      inset: 0,
+      zIndex: 40,
+      background: "rgba(0,0,0,0.3)",
+      backdropFilter: "blur(2px)",
+    }
     : {
-        position: "fixed",
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 240,
-        zIndex: 40,
-        background: "rgba(0,0,0,0.2)",
-        backdropFilter: "blur(2px)",
-      };
+      position: "fixed",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 240,
+      zIndex: 40,
+      background: "rgba(0,0,0,0.2)",
+      backdropFilter: "blur(2px)",
+    };
 
   const isActive = user.is_active === 1;
 

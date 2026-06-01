@@ -7,10 +7,10 @@
 //   Step 3 → New password  (ResetPasswordForm)
 
 import { useState } from "react";
-import BrandPanel from "../components/BrandPanel";
-import ForgotPasswordForm from "../components/Forgotpasswordform";
-import VerifyOtpForm from "../components/Verifyotpform";
-import ResetPasswordForm from "../components/Resetpasswordform";
+import BrandPanel from "@/app/components/BrandPanel";
+import ForgotPasswordForm from "@/app/components/Forgotpasswordform";
+import VerifyOtpForm from "@/app/components/Verifyotpform";
+import ResetPasswordForm from "@/app/components/Resetpasswordform";
 
 export default function ForgotPasswordPage() {
   const [step, setStep] = useState(1);   // 1 | 2 | 3

@@ -2,8 +2,8 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import AdminLayout from "../../../components/AdminLayout";
-import AdminDetailSidebar from "../../../components/AdminDetailSidebar";
+import AdminLayout from "@/app/components/AdminLayout";
+import AdminDetailSidebar from "@/app/components/AdminDetailSidebar";
 
 const BASE_URL = "https://back-end-sawu.onrender.com";
 
@@ -215,12 +215,12 @@ export default function Admins() {
   const tryToggle = async (token, targetId, action) => {
     // ✅ FIX: Use correct endpoint from backend documentation
     const url = `${BASE_URL}/admin/${action}/${targetId}`;
-    const res = await fetch(url, { 
-      method: "PATCH", 
-      headers: { 
-        Authorization: `Bearer ${token}`, 
-        "Content-Type": "application/json" 
-      } 
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json"
+      }
     });
     return res;
   };
@@ -236,9 +236,9 @@ export default function Admins() {
       // ✅ FIX: Use correct PATCH endpoint for deactivation
       const res = await fetch(`${BASE_URL}/admin/deactivate/${targetId}`, {
         method: "PATCH",
-        headers: { 
-          Authorization: `Bearer ${token}`, 
-          "Content-Type": "application/json" 
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ reason, notify_email: true }),
       });
@@ -276,9 +276,9 @@ export default function Admins() {
       // ✅ FIX: Use correct PATCH endpoint for activation
       const res = await fetch(`${BASE_URL}/admin/activate/${targetId}`, {
         method: "PATCH",
-        headers: { 
-          Authorization: `Bearer ${token}`, 
-          "Content-Type": "application/json" 
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
       });
 
@@ -553,8 +553,8 @@ export default function Admins() {
                               {togglingId === targetId
                                 ? <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
                                 : <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
-                                  </svg>}
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                </svg>}
                             </button>
                           ) : (
                             <button
@@ -566,8 +566,8 @@ export default function Admins() {
                               {togglingId === targetId
                                 ? <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
                                 : <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                  </svg>}
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>}
                             </button>
                           )}
                         </div>
@@ -608,7 +608,7 @@ export default function Admins() {
                   </div>
                 ))}
                 <div className="grid grid-cols-2 gap-3">
-                  
+
                   <div>
                     <label className="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1.5">Wilaya</label>
                     <div className="relative">

@@ -1,38 +1,38 @@
 "use client";
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import AdminLayout from "../../../components/AdminLayout";
+import AdminLayout from "@/app/components/AdminLayout";
 
 const BASE_URL = "https://back-end-sawu.onrender.com/api";
 
 // ─── Config ───────────────────────────────────────────────────────────────────
 
 const SEVERITY_CONFIG = {
-  high:   { label: "HIGH",   dot: "#ef4444", text: "#ef4444" },
+  high: { label: "HIGH", dot: "#ef4444", text: "#ef4444" },
   medium: { label: "MEDIUM", dot: "#f97316", text: "#f97316" },
-  low:    { label: "LOW",    dot: "#22c55e", text: "#22c55e" },
+  low: { label: "LOW", dot: "#22c55e", text: "#22c55e" },
 };
 
 const RAISON_LABELS = {
-  produit_dangereux:  "Potential health hazard; expired content",
+  produit_dangereux: "Potential health hazard; expired content",
   mauvaise_categorie: "Incorrect category",
-  arnaque:            "Fraud or scam",
-  comportement_abusif:"Abusive behavior",
-  autre:              "Other reason",
+  arnaque: "Fraud or scam",
+  comportement_abusif: "Abusive behavior",
+  autre: "Other reason",
 };
 
 const HANDLED_CONFIG = {
-  warned:    { icon: "warn",    label: "Warned",    pillBg: "#fff7ed", pillText: "#c2410c", stampText: "#d97706" },
-  deleted:   { icon: "delete",  label: "Deleted",   pillBg: "#fef2f2", pillText: "#dc2626", stampText: "#dc2626" },
+  warned: { icon: "warn", label: "Warned", pillBg: "#fff7ed", pillText: "#c2410c", stampText: "#d97706" },
+  deleted: { icon: "delete", label: "Deleted", pillBg: "#fef2f2", pillText: "#dc2626", stampText: "#dc2626" },
   suspended: { icon: "suspend", label: "Suspended", pillBg: "#fee2e2", pillText: "#dc2626", stampText: "#dc2626" },
   dismissed: { icon: "dismiss", label: "Dismissed", pillBg: "#f1f5f9", pillText: "#475569", stampText: "#64748b" },
 };
 
 const ALERT_CONFIG = {
-  warned:    { bg: "#fff7ed", border: "#fed7aa", icon: "warn",    title: "User Warned",       color: "#c2410c" },
-  deleted:   { bg: "#fef2f2", border: "#fecaca", icon: "delete",  title: "Donation Deleted",  color: "#dc2626" },
-  suspended: { bg: "#fef2f2", border: "#fecaca", icon: "suspend", title: "User Suspended",    color: "#dc2626" },
-  dismissed: { bg: "#f8fafc", border: "#cbd5e1", icon: "dismiss", title: "Report Dismissed",  color: "#475569" },
+  warned: { bg: "#fff7ed", border: "#fed7aa", icon: "warn", title: "User Warned", color: "#c2410c" },
+  deleted: { bg: "#fef2f2", border: "#fecaca", icon: "delete", title: "Donation Deleted", color: "#dc2626" },
+  suspended: { bg: "#fef2f2", border: "#fecaca", icon: "suspend", title: "User Suspended", color: "#dc2626" },
+  dismissed: { bg: "#f8fafc", border: "#cbd5e1", icon: "dismiss", title: "Report Dismissed", color: "#475569" },
 };
 
 // ─── SVG Icon Library ─────────────────────────────────────────────────────────
@@ -41,125 +41,125 @@ const icons = {
   // Original stat/header icons
   clipboard: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-      <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+      <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+      <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
     </svg>
   ),
   alertTriangle: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-      <line x1="12" y1="9" x2="12" y2="13"/>
-      <line x1="12" y1="17" x2="12.01" y2="17"/>
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
   ),
   checkCircle: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
-      <polyline points="22 4 12 14.01 9 11.01"/>
+      <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+      <polyline points="22 4 12 14.01 9 11.01" />
     </svg>
   ),
   userX: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-      <circle cx="8.5" cy="7" r="4"/>
-      <line x1="18" y1="8" x2="23" y2="13"/>
-      <line x1="23" y1="8" x2="18" y2="13"/>
+      <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="8.5" cy="7" r="4" />
+      <line x1="18" y1="8" x2="23" y2="13" />
+      <line x1="23" y1="8" x2="18" y2="13" />
     </svg>
   ),
   scale: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <line x1="12" y1="3" x2="12" y2="21"/>
-      <path d="M3 6l9-3 9 3"/>
-      <path d="M3 6c0 3.31 2.69 6 6 6s6-2.69 6-6"/>
-      <path d="M9 18c0 3.31 2.69 6 6 6s6-2.69 6-6"/>
+      <line x1="12" y1="3" x2="12" y2="21" />
+      <path d="M3 6l9-3 9 3" />
+      <path d="M3 6c0 3.31 2.69 6 6 6s6-2.69 6-6" />
+      <path d="M9 18c0 3.31 2.69 6 6 6s6-2.69 6-6" />
     </svg>
   ),
 
   // Action / status icons (replacing emojis)
   warn: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-      <line x1="12" y1="9" x2="12" y2="13"/>
-      <line x1="12" y1="17" x2="12.01" y2="17"/>
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
   ),
   warnLg: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
-      <line x1="12" y1="9" x2="12" y2="13"/>
-      <line x1="12" y1="17" x2="12.01" y2="17"/>
+      <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+      <line x1="12" y1="9" x2="12" y2="13" />
+      <line x1="12" y1="17" x2="12.01" y2="17" />
     </svg>
   ),
   delete: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 6 5 6 21 6"/>
-      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-      <path d="M10 11v6"/>
-      <path d="M14 11v6"/>
-      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
     </svg>
   ),
   deleteLg: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="3 6 5 6 21 6"/>
-      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-      <path d="M10 11v6"/>
-      <path d="M14 11v6"/>
-      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+      <path d="M10 11v6" />
+      <path d="M14 11v6" />
+      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
     </svg>
   ),
   suspend: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
     </svg>
   ),
   suspendLg: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="12" r="10"/>
-      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>
+      <circle cx="12" cy="12" r="10" />
+      <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
     </svg>
   ),
   dismiss: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
+      <polyline points="20 6 9 17 4 12" />
     </svg>
   ),
   dismissLg: (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="20 6 9 17 4 12"/>
+      <polyline points="20 6 9 17 4 12" />
     </svg>
   ),
 
   // Utility icons (replacing emoji utilities)
   search: (
     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="11" cy="11" r="8"/>
-      <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      <circle cx="11" cy="11" r="8" />
+      <line x1="21" y1="21" x2="16.65" y2="16.65" />
     </svg>
   ),
   inbox: (
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"/>
-      <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/>
+      <polyline points="22 12 16 12 14 15 10 15 8 12 2 12" />
+      <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z" />
     </svg>
   ),
   donation: (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z"/>
-      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
+      <path d="M20 7H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2z" />
+      <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16" />
     </svg>
   ),
   user: (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-      <circle cx="12" cy="7" r="4"/>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
     </svg>
   ),
   userSm: (
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-      <circle cx="12" cy="7" r="4"/>
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
     </svg>
   ),
 };
@@ -167,7 +167,7 @@ const icons = {
 // Helper to render icon by key
 function ActionIcon({ name, size = "sm", color = "currentColor" }) {
   const key = size === "lg" ? `${name}Lg` : name;
-  const el  = icons[key] ?? icons[name];
+  const el = icons[key] ?? icons[name];
   if (!el) return null;
   return (
     <span style={{ color, display: "inline-flex", alignItems: "center", flexShrink: 0 }}>
@@ -195,7 +195,7 @@ function TypeBadge({ type }) {
       className="text-xs font-semibold px-2 py-0.5 rounded-full"
       style={{
         background: isDon ? "#e0f2fe" : "#f3e8ff",
-        color:      isDon ? "#0369a1" : "#7c3aed",
+        color: isDon ? "#0369a1" : "#7c3aed",
       }}
     >
       {isDon ? "DONATION" : "USER ACCOUNT"}
@@ -241,20 +241,20 @@ function StatCard({ icon, label, value, badge, badgeColor, accentColor }) {
 // ─── Report Card ──────────────────────────────────────────────────────────────
 
 function ReportCard({ report, onReview }) {
-  const isDon     = report.type === "report_don";
-  const isHigh    = report.severity === "high";
+  const isDon = report.type === "report_don";
+  const isHigh = report.severity === "high";
   const isHandled = !!report._handledStatus;
-  const hCfg      = isHandled ? HANDLED_CONFIG[report._handledStatus] : null;
+  const hCfg = isHandled ? HANDLED_CONFIG[report._handledStatus] : null;
 
   return (
     <div
       className="rounded-2xl p-5 flex items-center gap-4 border transition-all duration-200 hover:shadow-md cursor-pointer relative overflow-hidden"
       style={{
-        background:      isHandled ? "#f8fafc" : "#ffffff",
-        borderColor:     isHandled ? "#e2e8f0" : isHigh ? "#fca5a5" : "#e2e8f0",
+        background: isHandled ? "#f8fafc" : "#ffffff",
+        borderColor: isHandled ? "#e2e8f0" : isHigh ? "#fca5a5" : "#e2e8f0",
         borderLeftWidth: isHandled ? "3px" : "1px",
         borderLeftColor: isHandled ? hCfg.stampText : undefined,
-        opacity:         isHandled ? 0.75 : 1,
+        opacity: isHandled ? 0.75 : 1,
       }}
     >
       {/* Thumbnail / avatar */}
@@ -370,7 +370,7 @@ function SystemPolicyModal({ onClose }) {
             </div>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
           </button>
         </div>
 
@@ -381,9 +381,9 @@ function SystemPolicyModal({ onClose }) {
               content: (
                 <div className="space-y-2 ml-7">
                   {[
-                    { color: "#ef4444", label: "High",   desc: "Health hazards, fraud/scams, expired food. Requires action within 24 hours." },
+                    { color: "#ef4444", label: "High", desc: "Health hazards, fraud/scams, expired food. Requires action within 24 hours." },
                     { color: "#f97316", label: "Medium", desc: "Abusive behavior, misclassified donations. Action within 72 hours." },
-                    { color: "#22c55e", label: "Low",    desc: "Minor policy violations, incorrect categories. Review within 7 days." },
+                    { color: "#22c55e", label: "Low", desc: "Minor policy violations, incorrect categories. Review within 7 days." },
                   ].map(({ color, label, desc }) => (
                     <div key={label} className="flex items-start gap-2">
                       <span className="w-2 h-2 rounded-full mt-1.5 flex-shrink-0" style={{ background: color }} />
@@ -398,10 +398,10 @@ function SystemPolicyModal({ onClose }) {
               content: (
                 <div className="space-y-3 ml-7">
                   {[
-                    { bg: "bg-orange-50", border: "border-orange-100", titleCls: "text-orange-700", bodyCls: "text-orange-600", iconKey: "warn",    label: "Warn User",       desc: "Sends an official warning notification. 3 warnings in 30 days may trigger automatic suspension." },
-                    { bg: "bg-red-50",    border: "border-red-100",    titleCls: "text-red-700",    bodyCls: "text-red-600",    iconKey: "delete",  label: "Delete Donation", desc: "Permanently removes the listing. Donor is notified with the reason." },
-                    { bg: "bg-red-50",    border: "border-red-100",    titleCls: "text-red-700",    bodyCls: "text-red-600",    iconKey: "suspend", label: "Suspend User",    desc: "Disables the account. Reserved for repeat offenders or severe abuse." },
-                    { bg: "bg-slate-50",  border: "border-slate-100",  titleCls: "text-slate-700",  bodyCls: "text-slate-600",  iconKey: "dismiss", label: "Dismiss Report",  desc: "Close an unfounded or duplicate report. Admin note required." },
+                    { bg: "bg-orange-50", border: "border-orange-100", titleCls: "text-orange-700", bodyCls: "text-orange-600", iconKey: "warn", label: "Warn User", desc: "Sends an official warning notification. 3 warnings in 30 days may trigger automatic suspension." },
+                    { bg: "bg-red-50", border: "border-red-100", titleCls: "text-red-700", bodyCls: "text-red-600", iconKey: "delete", label: "Delete Donation", desc: "Permanently removes the listing. Donor is notified with the reason." },
+                    { bg: "bg-red-50", border: "border-red-100", titleCls: "text-red-700", bodyCls: "text-red-600", iconKey: "suspend", label: "Suspend User", desc: "Disables the account. Reserved for repeat offenders or severe abuse." },
+                    { bg: "bg-slate-50", border: "border-slate-100", titleCls: "text-slate-700", bodyCls: "text-slate-600", iconKey: "dismiss", label: "Dismiss Report", desc: "Close an unfounded or duplicate report. Admin note required." },
                   ].map(({ bg, border, titleCls, bodyCls, iconKey, label, desc }) => (
                     <div key={label} className={`p-3 rounded-xl ${bg} border ${border}`}>
                       <p className={`font-semibold flex items-center gap-1.5 ${titleCls}`}>
@@ -459,13 +459,13 @@ function SystemPolicyModal({ onClose }) {
 // ─── Review Modal ─────────────────────────────────────────────────────────────
 
 function ReviewModal({ reportId, onClose, token, onActionSuccess, onReportHandled }) {
-  const [data, setData]                   = useState(null);
-  const [loading, setLoading]             = useState(true);
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
-  const [error, setError]                 = useState(null);
-  const [toast, setToast]                 = useState(null);
-  const [handledAlert, setHandledAlert]   = useState(null);
-  const [dismissNote, setDismissNote]     = useState("");
+  const [error, setError] = useState(null);
+  const [toast, setToast] = useState(null);
+  const [handledAlert, setHandledAlert] = useState(null);
+  const [dismissNote, setDismissNote] = useState("");
   const [showDismissInput, setShowDismissInput] = useState(false);
 
   const showToast = useCallback((msg, type = "success") => {
@@ -493,10 +493,10 @@ function ReviewModal({ reportId, onClose, token, onActionSuccess, onReportHandle
     return () => { cancelled = true; };
   }, [reportId, token]);
 
-  const sig        = data?.signalement;
-  const reporter   = data?.reporterInfo;
+  const sig = data?.signalement;
+  const reporter = data?.reporterInfo;
   const modHistory = data?.moderationHistory;
-  const isDon      = sig?.type === "report_don";
+  const isDon = sig?.type === "report_don";
 
   const runAction = async ({ key, url, method = "POST", body, successType, successFallback }) => {
     setActionLoading(key);
@@ -574,7 +574,7 @@ function ReviewModal({ reportId, onClose, token, onActionSuccess, onReportHandle
             className="absolute top-4 left-4 right-4 z-10 px-4 py-3 rounded-xl text-sm font-semibold shadow-lg"
             style={{
               background: toast.type === "error" ? "#fee2e2" : "#dcfce7",
-              color:      toast.type === "error" ? "#dc2626" : "#16a34a",
+              color: toast.type === "error" ? "#dc2626" : "#16a34a",
             }}
           >
             {toast.msg}
@@ -597,7 +597,7 @@ function ReviewModal({ reportId, onClose, token, onActionSuccess, onReportHandle
             )}
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-gray-500 transition">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
           </button>
         </div>
 
@@ -713,7 +713,7 @@ function ReviewModal({ reportId, onClose, token, onActionSuccess, onReportHandle
                       className="inline-block mt-1 px-3 py-1 rounded-full text-sm font-semibold"
                       style={{
                         background: modHistory.accountStatus === "active" ? "#dcfce7" : "#fee2e2",
-                        color:      modHistory.accountStatus === "active" ? "#16a34a" : "#dc2626",
+                        color: modHistory.accountStatus === "active" ? "#16a34a" : "#dc2626",
                       }}
                     >
                       {modHistory.accountStatus?.toUpperCase()}
@@ -844,17 +844,17 @@ function ReviewModal({ reportId, onClose, token, onActionSuccess, onReportHandle
 
 export default function ReportsModeration() {
   const router = useRouter();
-  const [token, setToken]     = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
   const [showPolicy, setShowPolicy] = useState(false);
 
-  const [stats, setStats]     = useState(null);
+  const [stats, setStats] = useState(null);
   const [reports, setReports] = useState([]);
   const [reportsLoading, setReportsLoading] = useState(true);
   const [handledStatuses, setHandledStatuses] = useState({});
 
-  const [search, setSearch]               = useState("");
-  const [filterType, setFilterType]       = useState("all");
+  const [search, setSearch] = useState("");
+  const [filterType, setFilterType] = useState("all");
   const [filterSeverity, setFilterSeverity] = useState("all");
   const [selectedReportId, setSelectedReportId] = useState(null);
 
@@ -862,7 +862,7 @@ export default function ReportsModeration() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     const t = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
-    const u = localStorage.getItem("user")        || sessionStorage.getItem("user");
+    const u = localStorage.getItem("user") || sessionStorage.getItem("user");
     if (!t || !u) { router.push("/LoginScreen"); return; }
     try { JSON.parse(u); setToken(t); }
     catch { router.push("/LoginScreen"); }
@@ -874,7 +874,7 @@ export default function ReportsModeration() {
     try {
       const res = await fetch(`${BASE_URL}/signalements/stats`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) setStats(await res.json());
-    } catch {}
+    } catch { }
   }, [token]);
 
   const fetchReports = useCallback(async () => {
@@ -883,7 +883,7 @@ export default function ReportsModeration() {
     try {
       const res = await fetch(`${BASE_URL}/signalements`, { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) { const json = await res.json(); setReports(json.rows ?? []); }
-    } catch {} finally { setReportsLoading(false); }
+    } catch { } finally { setReportsLoading(false); }
   }, [token]);
 
   useEffect(() => { if (token) { fetchStats(); fetchReports(); } }, [token, fetchStats, fetchReports]);
@@ -903,13 +903,13 @@ export default function ReportsModeration() {
         `rep-${r.id}`.includes(q);
       if (!hit) return false;
     }
-    if (filterType     !== "all" && r.type     !== filterType)     return false;
+    if (filterType !== "all" && r.type !== filterType) return false;
     if (filterSeverity !== "all" && r.severity !== filterSeverity) return false;
     return true;
   });
 
   const pendingReports = filteredReports.filter((r) => !r._handledStatus);
-  const handledReports = filteredReports.filter((r) =>  r._handledStatus);
+  const handledReports = filteredReports.filter((r) => r._handledStatus);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Spinner size={8} /></div>;
@@ -936,10 +936,10 @@ export default function ReportsModeration() {
 
         {/* Stats */}
         <div className="flex gap-4 mb-8 flex-wrap">
-          <StatCard icon={icons.clipboard}     label="Pending Reports"  value={stats?.pendingCount}      badge="+12%"  badgeColor={{ bg: "#dcfce7", text: "#16a34a" }} />
-          <StatCard icon={icons.alertTriangle} label="High Severity"    value={stats?.highSeverityCount} badge="URGENT" badgeColor={{ bg: "#fee2e2", text: "#dc2626" }} accentColor="#ef4444" />
-          <StatCard icon={icons.checkCircle}   label="Resolved Today"   value={stats?.resolvedToday}     badge="TODAY" badgeColor={{ bg: "#f0fdf4", text: "#16a34a" }} accentColor="#16a34a" />
-          <StatCard icon={icons.userX}         label="Suspended Users"  value={stats?.suspendedUsers}    badge="TOTAL" badgeColor={{ bg: "#f1f5f9", text: "#64748b" }} />
+          <StatCard icon={icons.clipboard} label="Pending Reports" value={stats?.pendingCount} badge="+12%" badgeColor={{ bg: "#dcfce7", text: "#16a34a" }} />
+          <StatCard icon={icons.alertTriangle} label="High Severity" value={stats?.highSeverityCount} badge="URGENT" badgeColor={{ bg: "#fee2e2", text: "#dc2626" }} accentColor="#ef4444" />
+          <StatCard icon={icons.checkCircle} label="Resolved Today" value={stats?.resolvedToday} badge="TODAY" badgeColor={{ bg: "#f0fdf4", text: "#16a34a" }} accentColor="#16a34a" />
+          <StatCard icon={icons.userX} label="Suspended Users" value={stats?.suspendedUsers} badge="TOTAL" badgeColor={{ bg: "#f1f5f9", text: "#64748b" }} />
         </div>
 
         {/* Filters */}
@@ -956,7 +956,7 @@ export default function ReportsModeration() {
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-300 bg-white"
             />
           </div>
-          <select value={filterType}     onChange={(e) => setFilterType(e.target.value)}     className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-700">
+          <select value={filterType} onChange={(e) => setFilterType(e.target.value)} className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 text-gray-700">
             <option value="all">All Types</option>
             <option value="report_don">Donation</option>
             <option value="report_user">User Account</option>

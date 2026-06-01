@@ -60,14 +60,14 @@ export default function Settings() {
       router.push("/LoginScreen");
       return;
     }
-    
+
     setUserId(user.id || user._id);
-    
+
     // Parse phone number to extract country code if it exists
     let phoneNumber = user.phone || "";
     let extractedCode = "+213";
     let extractedNumber = phoneNumber;
-    
+
     if (phoneNumber.startsWith("+")) {
       // Try to extract country code (assume codes are 3-4 digits)
       const match = phoneNumber.match(/^(\+\d{1,4})(.*)$/);
@@ -76,9 +76,9 @@ export default function Settings() {
         extractedNumber = match[2].trim();
       }
     }
-    
+
     setCountryCode(extractedCode);
-    
+
     const userProfile = {
       name: user.name || "",
       email: user.email || "",
@@ -106,7 +106,7 @@ export default function Settings() {
 
     setProfileLoading(true);
     setProfileMsg(null);
-    
+
     // Build update object with only fields that have changed
     const updateData = {};
     if (profile.name && profile.name.trim() !== originalProfile.name) {
@@ -115,23 +115,23 @@ export default function Settings() {
     if (profile.email && profile.email.trim() !== originalProfile.email) {
       updateData.email = profile.email.trim();
     }
-    
+
     // Combine country code with phone number
     const fullPhoneNumber = profile.phone ? `${countryCode}${profile.phone.trim()}` : "";
     if (fullPhoneNumber !== (originalProfile.phone ? `${countryCode}${originalProfile.phone}` : "")) {
       updateData.phone = fullPhoneNumber;
     }
-    
+
     if (profile.wilaya && profile.wilaya.trim() !== originalProfile.wilaya) {
       updateData.wilaya = profile.wilaya.trim();
     }
-    
+
     if (Object.keys(updateData).length === 0) {
       setProfileMsg({ type: "error", text: "No changes to update." });
       setProfileLoading(false);
       return;
     }
-    
+
     try {
       const response = await fetch(`${API_BASE}/admin/update/${userId}`, {
         method: "PUT",
@@ -141,7 +141,7 @@ export default function Settings() {
         },
         body: JSON.stringify(updateData),
       });
-      
+
       const responseText = await response.text();
       let data;
       try {
@@ -150,7 +150,7 @@ export default function Settings() {
         console.error("Failed to parse JSON:", e);
         data = { message: responseText || "Unknown error" };
       }
-      
+
       if (!response.ok) {
         if (response.status === 400) {
           throw new Error(data.message || "Invalid data. Please check your email format.");
@@ -166,7 +166,7 @@ export default function Settings() {
           throw new Error(data.message || `Server error: ${response.status}`);
         }
       }
-      
+
       // Update storage with new data
       const storage = localStorage.getItem("user") ? localStorage : sessionStorage;
       const stored = getStoredUser();
@@ -175,7 +175,7 @@ export default function Settings() {
         storage.setItem("user", JSON.stringify(updatedUser));
         setOriginalProfile({ ...profile });
       }
-      
+
       setProfileMsg({ type: "success", text: "Profile updated successfully!" });
       setTimeout(() => setProfileMsg(null), 3000);
     } catch (err) {
@@ -206,10 +206,10 @@ export default function Settings() {
       setPasswordMsg({ type: "error", text: "Current password is required." });
       return;
     }
-    
+
     setPasswordLoading(true);
     setPasswordMsg(null);
-    
+
     try {
       const response = await fetch(`${API_BASE}/auth/web/changepassword`, {
         method: "PUT",
@@ -223,7 +223,7 @@ export default function Settings() {
           confirm_password: passwords.confirm_password,
         }),
       });
-      
+
       const responseText = await response.text();
       let data;
       try {
@@ -231,7 +231,7 @@ export default function Settings() {
       } catch (e) {
         data = { message: responseText };
       }
-      
+
       if (response.status === 401) {
         localStorage.removeItem("accessToken");
         localStorage.removeItem("user");
@@ -239,9 +239,9 @@ export default function Settings() {
         sessionStorage.removeItem("user");
         throw new Error("Session expired. Please login again.");
       }
-      
+
       if (!response.ok) throw new Error(data.message || "Failed to update password");
-      
+
       setPasswordMsg({ type: "success", text: "Password updated successfully!" });
       setPasswords({ currentPassword: "", newPassword: "", confirm_password: "" });
       setTimeout(() => setPasswordMsg(null), 3000);
@@ -419,8 +419,8 @@ export default function Settings() {
           <div style={{ maxWidth: "50%" }}>
             <label style={styles.label}>Phone Number</label>
             <div style={styles.phoneRow}>
-              <select 
-                style={styles.select} 
+              <select
+                style={styles.select}
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value)}
               >

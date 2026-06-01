@@ -72,12 +72,12 @@ const refreshAccessToken = async () => {
 
     const data = await response.json();
     const newAccessToken = data.accessToken || data.token || data.access_token;
-    
+
     if (newAccessToken) {
       saveTokens(newAccessToken, refreshToken);
       return newAccessToken;
     }
-    
+
     throw new Error("No access token in refresh response");
   } catch (error) {
     console.error("Token refresh failed:", error);
@@ -119,13 +119,13 @@ export default function Settings() {
       router.push("/LoginScreen");
       return;
     }
-    
+
     setUserId(resolvedUserId);
-    
+
     let phoneNumber = user.phone || "";
     let extractedCode = "+213";
     let extractedNumber = phoneNumber;
-    
+
     if (phoneNumber.startsWith("+")) {
       const match = phoneNumber.match(/^(\+\d{1,4})(.*)$/);
       if (match) {
@@ -133,9 +133,9 @@ export default function Settings() {
         extractedNumber = match[2].trim();
       }
     }
-    
+
     setCountryCode(extractedCode);
-    
+
     const userProfile = {
       name: user.name || "",
       email: user.email || "",
@@ -164,7 +164,7 @@ export default function Settings() {
 
     try {
       const response = await fetch(url, { ...options, headers });
-      
+
       // If unauthorized and we haven't retried yet, try to refresh token
       if (response.status === 401 && retryCount === 0) {
         console.log("Token expired, attempting to refresh...");
@@ -179,13 +179,13 @@ export default function Settings() {
           throw new Error("Session expired. Please login again.");
         }
       }
-      
+
       if (response.status === 401 || response.status === 403) {
         clearAuthData();
         router.push("/LoginScreen");
         throw new Error("Session expired. Please login again.");
       }
-      
+
       return response;
     } catch (error) {
       if (error.message.includes("fetch")) {
@@ -209,7 +209,7 @@ export default function Settings() {
 
     setProfileLoading(true);
     setProfileMsg(null);
-    
+
     const updateData = {};
     if (profile.name && profile.name.trim() !== originalProfile.name) {
       updateData.name = profile.name.trim();
@@ -217,28 +217,28 @@ export default function Settings() {
     if (profile.email && profile.email.trim() !== originalProfile.email) {
       updateData.email = profile.email.trim();
     }
-    
+
     const fullPhoneNumber = profile.phone ? `${countryCode}${profile.phone.trim()}` : "";
     if (fullPhoneNumber !== (originalProfile.phone ? `${countryCode}${originalProfile.phone}` : "")) {
       updateData.phone = fullPhoneNumber;
     }
-    
+
     if (profile.wilaya && profile.wilaya.trim() !== originalProfile.wilaya) {
       updateData.wilaya = profile.wilaya.trim();
     }
-    
+
     if (Object.keys(updateData).length === 0) {
       setProfileMsg({ type: "error", text: "No changes to update." });
       setProfileLoading(false);
       return;
     }
-    
+
     try {
       const response = await fetchWithToken(`${API_BASE}/admin/update/${userId}`, {
         method: "PUT",
         body: JSON.stringify(updateData),
       });
-      
+
       const responseText = await response.text();
       let data;
       try {
@@ -247,7 +247,7 @@ export default function Settings() {
         console.error("Failed to parse JSON:", e);
         data = { message: responseText || "Unknown error" };
       }
-      
+
       if (!response.ok) {
         if (response.status === 400) {
           throw new Error(data.message || "Invalid data. Please check your email format.");
@@ -257,7 +257,7 @@ export default function Settings() {
           throw new Error(data.message || `Server error: ${response.status}`);
         }
       }
-      
+
       const storage = localStorage.getItem("user") ? localStorage : sessionStorage;
       const stored = getStoredUser();
       if (stored) {
@@ -265,7 +265,7 @@ export default function Settings() {
         storage.setItem("user", JSON.stringify(updatedUser));
         setOriginalProfile({ ...profile });
       }
-      
+
       setProfileMsg({ type: "success", text: "Profile updated successfully!" });
       setTimeout(() => setProfileMsg(null), 3000);
     } catch (err) {
@@ -282,55 +282,55 @@ export default function Settings() {
       setPasswordMsg({ type: "error", text: "Current password is required." });
       return;
     }
-    
+
     if (!passwords.newPassword) {
       setPasswordMsg({ type: "error", text: "New password is required." });
       return;
     }
-    
+
     if (passwords.newPassword !== passwords.confirm_password) {
       setPasswordMsg({ type: "error", text: "New passwords do not match." });
       return;
     }
-    
+
     if (passwords.newPassword.length < 8) {
       setPasswordMsg({ type: "error", text: "New password must be at least 8 characters." });
       return;
     }
-    
+
     if (passwords.newPassword === passwords.currentPassword) {
       setPasswordMsg({ type: "error", text: "New password must be different from current password." });
       return;
     }
-    
+
     setPasswordLoading(true);
     setPasswordMsg(null);
-    
+
     try {
       const requestBody = {
         currentPassword: passwords.currentPassword,
         newPassword: passwords.newPassword,
         confirm_password: passwords.confirm_password
       };
-      
+
       console.log("Attempting password change...");
-      
+
       const response = await fetchWithToken(`${API_BASE}/auth/web/changepassword`, {
         method: "PUT",
         body: JSON.stringify(requestBody),
       });
-      
+
       const responseText = await response.text();
       console.log("Response status:", response.status);
       console.log("Response body:", responseText);
-      
+
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (e) {
         data = { message: responseText || "Password updated successfully" };
       }
-      
+
       if (!response.ok) {
         if (response.status === 400) {
           throw new Error(data.message || "Invalid request. Please check your current password.");
@@ -342,18 +342,18 @@ export default function Settings() {
           throw new Error(data.message || `Server error: ${response.status}`);
         }
       }
-      
+
       // Success
       setPasswordMsg({ type: "success", text: "Password updated successfully!" });
       setPasswords({ currentPassword: "", newPassword: "", confirm_password: "" });
-      
+
       setTimeout(() => setPasswordMsg(null), 3000);
-      
+
     } catch (err) {
       console.error("Password update error:", err);
-      setPasswordMsg({ 
-        type: "error", 
-        text: err.message || "Failed to update password. Please try again." 
+      setPasswordMsg({
+        type: "error",
+        text: err.message || "Failed to update password. Please try again."
       });
     } finally {
       setPasswordLoading(false);
@@ -529,8 +529,8 @@ export default function Settings() {
           <div style={{ maxWidth: "50%" }}>
             <label style={styles.label}>Phone Number</label>
             <div style={styles.phoneRow}>
-              <select 
-                style={styles.select} 
+              <select
+                style={styles.select}
                 value={countryCode}
                 onChange={(e) => setCountryCode(e.target.value)}
               >

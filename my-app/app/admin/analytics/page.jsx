@@ -1,8 +1,7 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import AdminLayout from "../../components/AdminLayout";
-import EcoImpact3D from "../../components/EcoImpact3D";
+import AdminLayout from "@/app/components/AdminLayout";
 import {
   LineChart, Line, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -199,16 +198,16 @@ export default function Analytics() {
   useEffect(() => {
     if (!token || user === undefined) return;
     const fetchers = [
-      { key: "core",        fn: () => fetchJSON("/statistics/CoreMetrics", token),          setter: setCoreMetrics },
-      { key: "impact",      fn: () => fetchJSON("/statistics/ImpactMetrics", token),         setter: setImpact },
-      { key: "categories",  fn: () => fetchJSON("/statistics/DonationsByCategory", token),   setter: setCategories },
-      { key: "topCities",   fn: () => fetchJSON("/statistics/top-cities", token),            setter: setTopCities },
-      { key: "health",      fn: () => fetchJSON("/statistics/platform-health", token),       setter: setHealth },
-      { key: "contributors",fn: () => fetchJSON("/statistics/top-contributors", token),      setter: setContributors },
-      { key: "growth",      fn: () => fetchJSON("/statistics/GrowthMetrics", token),         setter: setGrowth },
-      { key: "engagement",  fn: () => fetchJSON("/statistics/EngagementMetrics", token),     setter: setEngagement },
-      { key: "reports",     fn: () => fetchJSON("/statistics/ReportsInfo", token),           setter: setReports },
-      { key: "pending",     fn: () => fetchJSON("/statistics/pendingsAndSuspiciousAndApprouved", token), setter: setPending },
+      { key: "core", fn: () => fetchJSON("/statistics/CoreMetrics", token), setter: setCoreMetrics },
+      { key: "impact", fn: () => fetchJSON("/statistics/ImpactMetrics", token), setter: setImpact },
+      { key: "categories", fn: () => fetchJSON("/statistics/DonationsByCategory", token), setter: setCategories },
+      { key: "topCities", fn: () => fetchJSON("/statistics/top-cities", token), setter: setTopCities },
+      { key: "health", fn: () => fetchJSON("/statistics/platform-health", token), setter: setHealth },
+      { key: "contributors", fn: () => fetchJSON("/statistics/top-contributors", token), setter: setContributors },
+      { key: "growth", fn: () => fetchJSON("/statistics/GrowthMetrics", token), setter: setGrowth },
+      { key: "engagement", fn: () => fetchJSON("/statistics/EngagementMetrics", token), setter: setEngagement },
+      { key: "reports", fn: () => fetchJSON("/statistics/ReportsInfo", token), setter: setReports },
+      { key: "pending", fn: () => fetchJSON("/statistics/pendingsAndSuspiciousAndApprouved", token), setter: setPending },
     ];
     let hasAuthError = false;
     Promise.all(fetchers.map(({ key, fn, setter }) =>
@@ -232,38 +231,38 @@ export default function Analytics() {
   );
 
   // Chart data
-const growthChartData = Array.from(
-  { length: 31 },
-  (_, i) => {
-    const day = i + 1;
+  const growthChartData = Array.from(
+    { length: 31 },
+    (_, i) => {
+      const day = i + 1;
 
-    return {
-      name: `${day}`,
+      return {
+        name: `${day}`,
 
-      Users:
-        growth?.newUsersThisMonth?.find(
-          (x) => x.day === day
-        )?.count || 0,
+        Users:
+          growth?.newUsersThisMonth?.find(
+            (x) => x.day === day
+          )?.count || 0,
 
-      Donations:
-        growth?.newDonationsThisMonth?.find(
-          (x) => x.day === day
-        )?.newDonations || 0,
+        Donations:
+          growth?.newDonationsThisMonth?.find(
+            (x) => x.day === day
+          )?.newDonations || 0,
 
-      Assoc:
-        growth?.newAssociationsThisMonth?.find(
-          (x) => x.day === day
-        )?.count || 0,
-    };
-  }
-);const reportsOverTime =
-  reports?.getReportsOverTime?.map((d) => ({
-    name: new Date(d.date).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-    }),
-    totalReports: d.totalReports,
-  })) ?? [];  const categoryData    = categories?.map(c => ({ name: c.name, total: c.total })) ?? [];
+        Assoc:
+          growth?.newAssociationsThisMonth?.find(
+            (x) => x.day === day
+          )?.count || 0,
+      };
+    }
+  ); const reportsOverTime =
+    reports?.getReportsOverTime?.map((d) => ({
+      name: new Date(d.date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+      }),
+      totalReports: d.totalReports,
+    })) ?? []; const categoryData = categories?.map(c => ({ name: c.name, total: c.total })) ?? [];
 
   const maxActive = Math.max(engagement?.activeToday ?? 0, engagement?.activeWeek ?? 0, engagement?.activeMonth ?? 0, 1);
 
@@ -275,7 +274,7 @@ const growthChartData = Array.from(
     <AdminLayout>
       <div style={{
         padding: "24px 28px", margin: "0 auto",
-         background: "#F7F8FA", minHeight: "100vh",
+        background: "#F7F8FA", minHeight: "100vh",
       }}>
 
         {/* Page header */}
@@ -283,15 +282,15 @@ const growthChartData = Array.from(
           <h1 style={{ fontSize: 22, fontWeight: 800, color: "#1A1C1E", margin: 0 }}>Analytics Dashboard</h1>
           <p style={{ color: "#777", fontSize: 13, marginTop: 4 }}>Overview of platform metrics</p>
         </div>
-  {/* ── ROW 2: Core metric stat cards ── */}
+        {/* ── ROW 2: Core metric stat cards ── */}
         <SectionTitle>Global Metrics</SectionTitle>
         {errors.core ? <Err msg={errors.core} /> : (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 12, marginBottom: 16 }}>
             <StatCard label="Total Secondary Admins" value={fmt(core?.totalSecondaryAdmins)} icon={Icons.shield} color="#2E7D32" trend={8.9} />
-            <StatCard label="Total Users"            value={fmt(core?.totalUsers)}            icon={Icons.users}  color="#1565C0" trend={12.4} />
-            <StatCard label="Associations"           value={fmt(core?.totalAssociations)}     icon={Icons.building} color="#6A1B9A" trend={5.2} />
+            <StatCard label="Total Users" value={fmt(core?.totalUsers)} icon={Icons.users} color="#1565C0" trend={12.4} />
+            <StatCard label="Associations" value={fmt(core?.totalAssociations)} icon={Icons.building} color="#6A1B9A" trend={5.2} />
             <StatCard label="Donors & Beneficiaries" value={fmt(core?.total_donateurs_beneficiaires)} icon={Icons.check} color="#00695C" trend={5.3} />
-            <StatCard label="Total Mayors"           value={fmt(core?.totalMayors)}           icon={Icons.building} color="#E65100" trend={-2.1} />
+            <StatCard label="Total Mayors" value={fmt(core?.totalMayors)} icon={Icons.building} color="#E65100" trend={-2.1} />
           </div>
         )}
 
@@ -300,187 +299,187 @@ const growthChartData = Array.from(
 
           {/* Monthly Growth chart */}
           {/* Monthly Growth chart */}
-<Card>
-  <div
-    style={{
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "flex-start",
-      marginBottom: 8,
-    }}
-  >
-    <div>
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 700,
-          color: "#1A1C1E",
-        }}
-      >
-        Monthly Growth
-      </div>
+          <Card>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "flex-start",
+                marginBottom: 8,
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: 13,
+                    fontWeight: 700,
+                    color: "#1A1C1E",
+                  }}
+                >
+                  Monthly Growth
+                </div>
 
-      <div
-        style={{
-          fontSize: 11,
-          color: "#aaa",
-        }}
-      >
-        {new Date().toLocaleDateString("en-US", {
-          month: "long",
-          year: "numeric",
-        }).toUpperCase()}
-      </div>
-    </div>
-  </div>
+                <div
+                  style={{
+                    fontSize: 11,
+                    color: "#aaa",
+                  }}
+                >
+                  {new Date().toLocaleDateString("en-US", {
+                    month: "long",
+                    year: "numeric",
+                  }).toUpperCase()}
+                </div>
+              </div>
+            </div>
 
-  {errors.growth ? (
-    <Err msg={errors.growth} />
-  ) : (
-    <>
-      <ResponsiveContainer
-        width="100%"
-        height={160}
-      >
-        <LineChart
-          data={growthChartData}
-          margin={{
-            top: 4,
-            right: 4,
-            left: -20,
-            bottom: 0,
-          }}
-        >
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke="#F5F5F5"
-          />
+            {errors.growth ? (
+              <Err msg={errors.growth} />
+            ) : (
+              <>
+                <ResponsiveContainer
+                  width="100%"
+                  height={160}
+                >
+                  <LineChart
+                    data={growthChartData}
+                    margin={{
+                      top: 4,
+                      right: 4,
+                      left: -20,
+                      bottom: 0,
+                    }}
+                  >
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#F5F5F5"
+                    />
 
-          <XAxis
-            dataKey="name"
-            tick={{
-              fontSize: 10,
-              fill: "#aaa",
-            }}
-            axisLine={false}
-            tickLine={false}
-          />
+                    <XAxis
+                      dataKey="name"
+                      tick={{
+                        fontSize: 10,
+                        fill: "#aaa",
+                      }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
 
-          <YAxis hide />
+                    <YAxis hide />
 
-          <Tooltip
-            contentStyle={{
-              fontSize: 11,
-              borderRadius: 8,
-              border: "1px solid #eee",
-            }}
-          />
+                    <Tooltip
+                      contentStyle={{
+                        fontSize: 11,
+                        borderRadius: 8,
+                        border: "1px solid #eee",
+                      }}
+                    />
 
-          <Line
-            type="monotone"
-            dataKey="Users"
-            stroke="#032B5B"
-            strokeWidth={2.5}
-            dot={false}
-          />
+                    <Line
+                      type="monotone"
+                      dataKey="Users"
+                      stroke="#032B5B"
+                      strokeWidth={2.5}
+                      dot={false}
+                    />
 
-          <Line
-            type="monotone"
-            dataKey="Donations"
-            stroke="#5C7AC9"
-            strokeWidth={2}
-            dot={false}
-            strokeDasharray="4 2"
-          />
+                    <Line
+                      type="monotone"
+                      dataKey="Donations"
+                      stroke="#5C7AC9"
+                      strokeWidth={2}
+                      dot={false}
+                      strokeDasharray="4 2"
+                    />
 
-          <Line
-            type="monotone"
-            dataKey="Assoc"
-            stroke="#ccc"
-            strokeWidth={1.5}
-            dot={false}
-            strokeDasharray="2 3"
-          />
-        </LineChart>
-      </ResponsiveContainer>
+                    <Line
+                      type="monotone"
+                      dataKey="Assoc"
+                      stroke="#ccc"
+                      strokeWidth={1.5}
+                      dot={false}
+                      strokeDasharray="2 3"
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
 
-      <div
-        style={{
-          display: "flex",
-          gap: 20,
-          marginTop: 10,
-        }}
-      >
-        <div>
-          <div
-            style={{
-              fontSize: 10,
-              color: "#032B5B",
-              fontWeight: 700,
-            }}
-          >
-            ● USERS
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-            }}
-          >
-            {growth?.activeMonth || 0}
-          </div>
-        </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 20,
+                    marginTop: 10,
+                  }}
+                >
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: "#032B5B",
+                        fontWeight: 700,
+                      }}
+                    >
+                      ● USERS
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {growth?.activeMonth || 0}
+                    </div>
+                  </div>
 
-        <div>
-          <div
-            style={{
-              fontSize: 10,
-              color: "#5C7AC9",
-              fontWeight: 700,
-            }}
-          >
-            ● DONATIONS
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-            }}
-          >
-            {
-              growth?.newDonationsThisMonth
-                ?.length
-            }
-          </div>
-        </div>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: "#5C7AC9",
+                        fontWeight: 700,
+                      }}
+                    >
+                      ● DONATIONS
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {
+                        growth?.newDonationsThisMonth
+                          ?.length
+                      }
+                    </div>
+                  </div>
 
-        <div>
-          <div
-            style={{
-              fontSize: 10,
-              color: "#aaa",
-              fontWeight: 700,
-            }}
-          >
-            ● ASSOC.
-          </div>
-          <div
-            style={{
-              fontSize: 12,
-              fontWeight: 700,
-            }}
-          >
-            {
-              growth
-                ?.newAssociationsThisMonth
-                ?.length
-            }
-          </div>
-        </div>
-      </div>
-    </>
-  )}
-</Card>
+                  <div>
+                    <div
+                      style={{
+                        fontSize: 10,
+                        color: "#aaa",
+                        fontWeight: 700,
+                      }}
+                    >
+                      ● ASSOC.
+                    </div>
+                    <div
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 700,
+                      }}
+                    >
+                      {
+                        growth
+                          ?.newAssociationsThisMonth
+                          ?.length
+                      }
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </Card>
 
           {/* Platform Activity Trends */}
           <Card>
@@ -488,9 +487,9 @@ const growthChartData = Array.from(
             <div style={{ fontSize: 11, fontWeight: 600, color: "#888", marginBottom: 10, textTransform: "uppercase", letterSpacing: 0.5 }}>Active User Comparison</div>
             {errors.engagement ? <Err msg={errors.engagement} /> : (
               <>
-                <ActiveBar label="Today"      value={engagement?.activeToday  ?? 0} max={maxActive} color="#032B5B" />
-                <ActiveBar label="This Week"  value={engagement?.activeWeek   ?? 0} max={maxActive} color="#5C7AC9" />
-                <ActiveBar label="This Month" value={engagement?.activeMonth  ?? 0} max={maxActive} color="#C7DEFF" />
+                <ActiveBar label="Today" value={engagement?.activeToday ?? 0} max={maxActive} color="#032B5B" />
+                <ActiveBar label="This Week" value={engagement?.activeWeek ?? 0} max={maxActive} color="#5C7AC9" />
+                <ActiveBar label="This Month" value={engagement?.activeMonth ?? 0} max={maxActive} color="#C7DEFF" />
                 {engagement?.engagementGrowthPct != null && (
                   <div style={{ marginTop: 12, fontSize: 12, color: "#2E7D32", fontWeight: 600 }}>
                     ↑ Engagement up {engagement.engagementGrowthPct}% from last period
@@ -501,7 +500,7 @@ const growthChartData = Array.from(
           </Card>
         </div>
 
-      
+
 
         {/* ── ROW 3: Donations by Category + Meals/CO2 cards + Top Cities ── */}
         <SectionTitle icon={Icons.pie}>Donations & Impact</SectionTitle>
@@ -516,7 +515,7 @@ const growthChartData = Array.from(
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie data={categoryData} dataKey="total" cx="50%" cy="50%"
-                           outerRadius={52} innerRadius={34} paddingAngle={3} labelLine={false} label={false}>
+                        outerRadius={52} innerRadius={34} paddingAngle={3} labelLine={false} label={false}>
                         {categoryData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                       </Pie>
                       <Tooltip formatter={(v) => [v, "Donations"]} />
@@ -542,101 +541,101 @@ const growthChartData = Array.from(
           </Card>
 
           {/* Environmental Impact */}
-<div
-  style={{
-    display: "flex",
-    flexDirection: "column",
-    gap: 12,
-  }}
->
-  <Card
-    style={{
-      flex: 1,
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-    }}
-  >
-    <div
-      style={{
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        background: "#FFF3E0",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Icons.utensils />
-    </div>
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: 12,
+            }}
+          >
+            <Card
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: "#FFF3E0",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icons.utensils />
+              </div>
 
-    <div>
-      <div
-        style={{
-          fontSize: 18,
-          fontWeight: 800,
-          color: "#1A1C1E",
-        }}
-      >
-        {impact?.donationsCompleted ?? "—"}
-      </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: "#1A1C1E",
+                  }}
+                >
+                  {impact?.donationsCompleted ?? "—"}
+                </div>
 
-      <div
-        style={{
-          fontSize: 12,
-          color: "#888",
-        }}
-      >
-        Donations Completed
-      </div>
-    </div>
-  </Card>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#888",
+                  }}
+                >
+                  Donations Completed
+                </div>
+              </div>
+            </Card>
 
-  <Card
-    style={{
-      flex: 1,
-      display: "flex",
-      alignItems: "center",
-      gap: 12,
-    }}
-  >
-    <div
-      style={{
-        width: 36,
-        height: 36,
-        borderRadius: 10,
-        background: "#E8F5E9",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-      }}
-    >
-      <Icons.leaf />
-    </div>
+            <Card
+              style={{
+                flex: 1,
+                display: "flex",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
+              <div
+                style={{
+                  width: 36,
+                  height: 36,
+                  borderRadius: 10,
+                  background: "#E8F5E9",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                <Icons.leaf />
+              </div>
 
-    <div>
-      <div
-        style={{
-          fontSize: 18,
-          fontWeight: 800,
-          color: "#1A1C1E",
-        }}
-      >
-        {impact?.co2Saved ?? "—"} kg
-      </div>
+              <div>
+                <div
+                  style={{
+                    fontSize: 18,
+                    fontWeight: 800,
+                    color: "#1A1C1E",
+                  }}
+                >
+                  {impact?.co2Saved ?? "—"} kg
+                </div>
 
-      <div
-        style={{
-          fontSize: 12,
-          color: "#888",
-        }}
-      >
-        CO₂ Saved
-      </div>
-    </div>
-  </Card>
-</div>
+                <div
+                  style={{
+                    fontSize: 12,
+                    color: "#888",
+                  }}
+                >
+                  CO₂ Saved
+                </div>
+              </div>
+            </Card>
+          </div>
 
 
           {/* Top Cities table */}
@@ -668,9 +667,7 @@ const growthChartData = Array.from(
             )}
           </Card>
         </div>
-<EcoImpact3D
-      impact={impact}
-    />
+
         {/* ── ROW 4: System Elite / Top Contributors ── */}
         <SectionTitle icon={Icons.trophy}>System Elite</SectionTitle>
         {errors.contributors ? <Err msg={errors.contributors} /> : (
@@ -750,145 +747,145 @@ const growthChartData = Array.from(
         <div style={{ display: "grid", gridTemplateColumns: "280px 1fr", gap: 16 }}>
 
           {/* Critical Oversight */}
-<Card>
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 6,
-      color: "#BA1A1A",
-      marginBottom: 8,
-    }}
-  >
-    <Icons.alert />
-    <span
-      style={{
-        fontSize: 13,
-        fontWeight: 700,
-      }}
-    >
-      Critical Oversight
-    </span>
-  </div>
+          <Card>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+                color: "#BA1A1A",
+                marginBottom: 8,
+              }}
+            >
+              <Icons.alert />
+              <span
+                style={{
+                  fontSize: 13,
+                  fontWeight: 700,
+                }}
+              >
+                Critical Oversight
+              </span>
+            </div>
 
-  <div
-    style={{
-      fontSize: 11,
-      color: "#888",
-      textTransform: "uppercase",
-      letterSpacing: 0.5,
-      marginBottom: 4,
-    }}
-  >
-    Active Reports
-  </div>
+            <div
+              style={{
+                fontSize: 11,
+                color: "#888",
+                textTransform: "uppercase",
+                letterSpacing: 0.5,
+                marginBottom: 4,
+              }}
+            >
+              Active Reports
+            </div>
 
-  <div
-    style={{
-      fontSize: 36,
-      fontWeight: 900,
-      color: "#1A1C1E",
-      marginBottom: 16,
-    }}
-  >
-    {reports?.totalReports?.[0]
-      ?.totalReports != null
-      ? fmt(
-          reports.totalReports[0]
-            .totalReports
-        )
-      : "—"}
-  </div>
+            <div
+              style={{
+                fontSize: 36,
+                fontWeight: 900,
+                color: "#1A1C1E",
+                marginBottom: 16,
+              }}
+            >
+              {reports?.totalReports?.[0]
+                ?.totalReports != null
+                ? fmt(
+                  reports.totalReports[0]
+                    .totalReports
+                )
+                : "—"}
+            </div>
 
-  <button
-    onClick={() =>
-      router.push("/admin/reports")
-    }
-    style={{
-      width: "100%",
-      padding: "10px 0",
-      background: "#BA1A1A",
-      color: "#fff",
-      border: "none",
-      borderRadius: 10,
-      fontSize: 13,
-      fontWeight: 700,
-      cursor: "pointer",
-    }}
-  >
-    Access Safety Console
-  </button>
-</Card>
+            <button
+              onClick={() =>
+                router.push("/admin/reports")
+              }
+              style={{
+                width: "100%",
+                padding: "10px 0",
+                background: "#BA1A1A",
+                color: "#fff",
+                border: "none",
+                borderRadius: 10,
+                fontSize: 13,
+                fontWeight: 700,
+                cursor: "pointer",
+              }}
+            >
+              Access Safety Console
+            </button>
+          </Card>
 
           {/* Reports over time */}
-<Card>
-  <div
-    style={{
-      fontSize: 13,
-      fontWeight: 700,
-      color: "#1A1C1E",
-      marginBottom: 12,
-      display: "flex",
-      justifyContent: "space-between",
-      alignItems: "center",
-    }}
-  >
-    Reports Over Time
+          <Card>
+            <div
+              style={{
+                fontSize: 13,
+                fontWeight: 700,
+                color: "#1A1C1E",
+                marginBottom: 12,
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              Reports Over Time
 
-    <span style={{ fontSize: 11, color: "#666" }}>
-      Total: {reports?.totalReports?.[0]?.totalReports || 0}
-    </span>
-  </div>
+              <span style={{ fontSize: 11, color: "#666" }}>
+                Total: {reports?.totalReports?.[0]?.totalReports || 0}
+              </span>
+            </div>
 
-  {errors.reports ? (
-    <Err msg={errors.reports} />
-  ) : (
-    <ResponsiveContainer width="100%" height={180}>
-      <LineChart
-        data={reportsOverTime}
-        margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
-      >
-        <CartesianGrid
-          strokeDasharray="3 3"
-          stroke="#F5F5F5"
-        />
+            {errors.reports ? (
+              <Err msg={errors.reports} />
+            ) : (
+              <ResponsiveContainer width="100%" height={180}>
+                <LineChart
+                  data={reportsOverTime}
+                  margin={{ top: 4, right: 8, left: -20, bottom: 0 }}
+                >
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="#F5F5F5"
+                  />
 
-        <XAxis
-          dataKey="name"
-          tick={{ fontSize: 10, fill: "#aaa" }}
-          axisLine={false}
-          tickLine={false}
-        />
+                  <XAxis
+                    dataKey="name"
+                    tick={{ fontSize: 10, fill: "#aaa" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
 
-        <YAxis
-          tick={{ fontSize: 10, fill: "#aaa" }}
-          axisLine={false}
-          tickLine={false}
-        />
+                  <YAxis
+                    tick={{ fontSize: 10, fill: "#aaa" }}
+                    axisLine={false}
+                    tickLine={false}
+                  />
 
-        <Tooltip
-          contentStyle={{
-            fontSize: 11,
-            borderRadius: 8,
-            border: "1px solid #eee",
-          }}
-        />
+                  <Tooltip
+                    contentStyle={{
+                      fontSize: 11,
+                      borderRadius: 8,
+                      border: "1px solid #eee",
+                    }}
+                  />
 
-        <Line
-          type="monotone"
-          dataKey="totalReports"
-          stroke="#BA1A1A"
-          strokeWidth={3}
-          dot={{ r: 3 }}
-          activeDot={{ r: 5 }}
-        />
-      </LineChart>
-    </ResponsiveContainer>
-  )}
-</Card>
+                  <Line
+                    type="monotone"
+                    dataKey="totalReports"
+                    stroke="#BA1A1A"
+                    strokeWidth={3}
+                    dot={{ r: 3 }}
+                    activeDot={{ r: 5 }}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            )}
+          </Card>
         </div>
 
-        
+
         <div style={{ height: 48 }} />
       </div>
     </AdminLayout>

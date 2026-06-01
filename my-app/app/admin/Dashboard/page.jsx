@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import AdminLayout from "../../components/AdminLayout";
+import AdminLayout from "@/app/components/AdminLayout";
+import EcoImpact3D from "@/app/components/EcoImpact3D";
 
 const BASE_URL = "https://back-end-sawu.onrender.com";
 
@@ -461,8 +461,8 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          <div className="impact-image-col">
-            <Image src="/tree.png" alt="Impact" width={240} height={200} style={{ objectFit: "contain", filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.28))" }} />
+          <div className="impact-image-col" style={{ minWidth: 320 }}>
+            <EcoImpact3D impact={impact} />
           </div>
         </div>
 
@@ -770,7 +770,7 @@ const css = `
   align-items: center;
   justify-content: space-between;
   overflow: hidden;
-  min-height: 200px;
+  min-height: 380px;
 }
 .impact-bg-grid {
   position: absolute; inset: 0;
@@ -794,7 +794,7 @@ const css = `
 .impact-metric-label { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.6); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 3px; }
 .impact-metric-value { font-size: 20px; font-weight: 800; letter-spacing: -0.5px; }
 .impact-divider { width: 1px; height: 52px; background: rgba(255,255,255,0.15); }
-.impact-image-col { position: relative; z-index: 1; flex-shrink: 0; margin-left: 24px; }
+.impact-image-col { position: relative; z-index: 1; flex-shrink: 0; margin-left: 24px; border-radius: 16px; overflow: hidden; }
 
 /* Layout */
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
@@ -909,7 +909,7 @@ const css = `
 @media (max-width: 1100px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }
   .two-col { grid-template-columns: 1fr; }
-  .impact-image-col { display: none; }
+  .impact-image-col { min-width: 260px; }
 }
 @media (max-width: 640px) {
   .db-page { padding: 16px; }

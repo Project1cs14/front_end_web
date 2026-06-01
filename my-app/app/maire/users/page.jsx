@@ -133,11 +133,11 @@ function DetailDrawer({ user, onClose, isMobile }) {
 
   useEffect(() => {
     if (!user) return;
-    
+
     const fetchUserDetails = async () => {
       const token = getToken();
       if (!token) return;
-      
+
       setLoading(true);
       try {
         const targetId = user.user_id || user.id;
@@ -156,7 +156,7 @@ function DetailDrawer({ user, onClose, isMobile }) {
         setLoading(false);
       }
     };
-    
+
     fetchUserDetails();
   }, [user]);
 
@@ -167,53 +167,53 @@ function DetailDrawer({ user, onClose, isMobile }) {
 
   const panelStyle = isMobile
     ? {
-        position: "fixed",
-        left: 0,
-        right: 0,
-        bottom: 0,
-        zIndex: 50,
-        maxHeight: "88vh",
-        background: "#fff",
-        borderTop: "1px solid #e5e7eb",
-        borderRadius: "20px 20px 0 0",
-        boxShadow: "0 -10px 40px rgba(0,0,0,0.1)",
-        display: "flex",
-        flexDirection: "column",
-        animation: "sheetUp .3s ease-out forwards",
-      }
+      position: "fixed",
+      left: 0,
+      right: 0,
+      bottom: 0,
+      zIndex: 50,
+      maxHeight: "88vh",
+      background: "#fff",
+      borderTop: "1px solid #e5e7eb",
+      borderRadius: "20px 20px 0 0",
+      boxShadow: "0 -10px 40px rgba(0,0,0,0.1)",
+      display: "flex",
+      flexDirection: "column",
+      animation: "sheetUp .3s ease-out forwards",
+    }
     : {
-        position: "fixed",
-        top: 0,
-        right: 0,
-        bottom: 0,
-        width: 420,
-        zIndex: 50,
-        background: "#fff",
-        borderLeft: "1px solid #e5e7eb",
-        boxShadow: "-10px 0 40px rgba(0,0,0,0.08)",
-        display: "flex",
-        flexDirection: "column",
-        animation: "drawerIn .3s ease-out forwards",
-      };
+      position: "fixed",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      width: 420,
+      zIndex: 50,
+      background: "#fff",
+      borderLeft: "1px solid #e5e7eb",
+      boxShadow: "-10px 0 40px rgba(0,0,0,0.08)",
+      display: "flex",
+      flexDirection: "column",
+      animation: "drawerIn .3s ease-out forwards",
+    };
 
   const backdropStyle = isMobile
     ? {
-        position: "fixed",
-        inset: 0,
-        zIndex: 40,
-        background: "rgba(0,0,0,0.3)",
-        backdropFilter: "blur(2px)",
-      }
+      position: "fixed",
+      inset: 0,
+      zIndex: 40,
+      background: "rgba(0,0,0,0.3)",
+      backdropFilter: "blur(2px)",
+    }
     : {
-        position: "fixed",
-        top: 0,
-        right: 0,
-        bottom: 0,
-        left: 240,
-        zIndex: 40,
-        background: "rgba(0,0,0,0.2)",
-        backdropFilter: "blur(2px)",
-      };
+      position: "fixed",
+      top: 0,
+      right: 0,
+      bottom: 0,
+      left: 240,
+      zIndex: 40,
+      background: "rgba(0,0,0,0.2)",
+      backdropFilter: "blur(2px)",
+    };
 
   const isActive = mergedUser.is_active === 1;
   const displayName = mergedUser.name || (mergedUser.first_name && mergedUser.last_name
@@ -729,7 +729,7 @@ export default function UsersPage() {
       });
       if (!res.ok) throw new Error("Failed to fetch users");
       const data = await res.json();
-      
+
       // Handle different API response formats
       let usersList = [];
       if (Array.isArray(data)) {
@@ -743,7 +743,7 @@ export default function UsersPage() {
       } else {
         usersList = [];
       }
-      
+
       setUsers(usersList || []);
     } catch (err) {
       setError(err.message || "Failed to load users");
@@ -1077,7 +1077,7 @@ export default function UsersPage() {
 
                 {!loading && !error && filtered.map((user, idx) => {
                   const isActive = user.is_active === 1;
-                  const displayName = user.name || (user.first_name && user.last_name                    ? `${user.first_name} ${user.last_name}`
+                  const displayName = user.name || (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}`
                     : user.email || "User");
 
                   return (
@@ -1215,7 +1215,7 @@ export default function UsersPage() {
                   );
                 })}
               </tbody>
-             </table>
+            </table>
 
             {!loading && error && (
               <div style={{

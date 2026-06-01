@@ -14,8 +14,8 @@ const formatNum = (n = 0) =>
   n >= 1_000_000
     ? (n / 1_000_000).toFixed(1).replace(".0", "") + "M"
     : n >= 1_000
-    ? (n / 1_000).toFixed(1).replace(".0", "") + "k"
-    : String(n);
+      ? (n / 1_000).toFixed(1).replace(".0", "") + "k"
+      : String(n);
 
 function groupByWilaya(list) {
   return list.reduce((map, quartier) => {
@@ -136,8 +136,8 @@ function ContributorCard({ user, rank, onSelect, isFoodSaver, isLoading }) {
   const shadow = isFoodSaver
     ? "0 0 0 4px rgba(22,163,74,0.08)"
     : hovered
-    ? "0 4px 16px rgba(0,0,0,0.06)"
-    : "none";
+      ? "0 4px 16px rgba(0,0,0,0.06)"
+      : "none";
 
   return (
     <div
@@ -413,17 +413,17 @@ function Toast({ toast }) {
 /* ── Page ── */
 export default function FoodSaver() {
   const router = useRouter();
-  const [classement,     setClassement]     = useState([]);
-  const [wilayaGroups,   setWilayaGroups]   = useState({});
-  const [uniqueWilayas,  setUniqueWilayas]  = useState([]);
-  const [filterWilaya,   setFilterWilaya]   = useState("all");
+  const [classement, setClassement] = useState([]);
+  const [wilayaGroups, setWilayaGroups] = useState({});
+  const [uniqueWilayas, setUniqueWilayas] = useState([]);
+  const [filterWilaya, setFilterWilaya] = useState("all");
   const [filterQuartier, setFilterQuartier] = useState("all");
-  const [selectedMap,    setSelectedMap]    = useState({});
-  const [loadingId,      setLoadingId]      = useState(null);
-  const [fetching,       setFetching]       = useState(true);
+  const [selectedMap, setSelectedMap] = useState({});
+  const [loadingId, setLoadingId] = useState(null);
+  const [fetching, setFetching] = useState(true);
   const [publishLoading, setPublishLoading] = useState(false);
-  const [monthLabel,     setMonthLabel]     = useState("");
-  const [toast,          setToast]          = useState(null);
+  const [monthLabel, setMonthLabel] = useState("");
+  const [toast, setToast] = useState(null);
 
   const showToast = useCallback((msg, type = "success") => {
     setToast({ msg, type });

@@ -558,13 +558,12 @@ export default function CategoriesPage() {
                     </td>
                     <td className="px-6 py-4 text-gray-600 text-xs max-w-xs truncate">{category.description || "—"}</td>
                     <td className="px-6 py-4">
-                      <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${
-                        !category.coefficient || category.coefficient < 5
+                      <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${!category.coefficient || category.coefficient < 5
                           ? "bg-red-100 text-red-700"
                           : category.coefficient < 15
-                          ? "bg-yellow-100 text-yellow-700"
-                          : "bg-green-100 text-green-700"
-                      }`}>
+                            ? "bg-yellow-100 text-yellow-700"
+                            : "bg-green-100 text-green-700"
+                        }`}>
                         {category.coefficient ?? "—"}
                       </div>
                     </td>

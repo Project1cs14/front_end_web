@@ -66,23 +66,23 @@ function DonationDetailSidebar({ donation, isOpen, onClose }) {
             <div className="flex gap-2 mt-3">
               <span className={"inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full " +
                 (info?.status === "active" ? "bg-emerald-50 text-emerald-600" :
-                info?.status === "reserved" ? "bg-amber-50 text-amber-600" :
-                info?.status === "completed" ? "bg-sky-50 text-sky-600" :
-                info?.status === "cancelled" ? "bg-rose-50 text-rose-500" :
-                "bg-gray-100 text-gray-600")
+                  info?.status === "reserved" ? "bg-amber-50 text-amber-600" :
+                    info?.status === "completed" ? "bg-sky-50 text-sky-600" :
+                      info?.status === "cancelled" ? "bg-rose-50 text-rose-500" :
+                        "bg-gray-100 text-gray-600")
               }>
                 <span className={"w-1.5 h-1.5 rounded-full " +
                   (info?.status === "active" ? "bg-emerald-500" :
-                  info?.status === "reserved" ? "bg-amber-500" :
-                  info?.status === "completed" ? "bg-sky-500" :
-                  info?.status === "cancelled" ? "bg-rose-500" :
-                  "bg-gray-400")
+                    info?.status === "reserved" ? "bg-amber-500" :
+                      info?.status === "completed" ? "bg-sky-500" :
+                        info?.status === "cancelled" ? "bg-rose-500" :
+                          "bg-gray-400")
                 } />
                 {info?.status === "active" ? "Active" :
-                 info?.status === "reserved" ? "Reserved" :
-                 info?.status === "completed" ? "Completed" :
-                 info?.status === "cancelled" ? "Cancelled" :
-                 (info?.status ? info.status.charAt(0).toUpperCase() + info.status.slice(1) : "Unknown")}
+                  info?.status === "reserved" ? "Reserved" :
+                    info?.status === "completed" ? "Completed" :
+                      info?.status === "cancelled" ? "Cancelled" :
+                        (info?.status ? info.status.charAt(0).toUpperCase() + info.status.slice(1) : "Unknown")}
               </span>
             </div>
           </div>
@@ -346,7 +346,7 @@ export default function DonationsPage() {
         {/* HEADER SECTION */}
         <div className="mb-6">
           <h1 className="text-[28px] font-bold text-[#1a1f5e] tracking-tight mb-4">Donations Management</h1>
-          
+
           {/* Header Controls */}
           <div className="flex items-center gap-3 flex-wrap">
             {/* Search Bar */}
@@ -473,17 +473,17 @@ export default function DonationsPage() {
                     <td className="px-4 py-3.5">
                       <span className={"inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full " +
                         (donation.status === "active" ? "bg-emerald-50 text-emerald-600" :
-                        donation.status === "reserved" ? "bg-amber-50 text-amber-600" :
-                        donation.status === "completed" ? "bg-sky-50 text-sky-600" :
-                        donation.status === "cancelled" ? "bg-rose-50 text-rose-500" :
-                        "bg-gray-100 text-gray-600")
+                          donation.status === "reserved" ? "bg-amber-50 text-amber-600" :
+                            donation.status === "completed" ? "bg-sky-50 text-sky-600" :
+                              donation.status === "cancelled" ? "bg-rose-50 text-rose-500" :
+                                "bg-gray-100 text-gray-600")
                       }>
                         <span className={"w-1.5 h-1.5 rounded-full " +
                           (donation.status === "active" ? "bg-emerald-500" :
-                          donation.status === "reserved" ? "bg-amber-500" :
-                          donation.status === "completed" ? "bg-sky-500" :
-                          donation.status === "cancelled" ? "bg-rose-500" :
-                          "bg-gray-400")
+                            donation.status === "reserved" ? "bg-amber-500" :
+                              donation.status === "completed" ? "bg-sky-500" :
+                                donation.status === "cancelled" ? "bg-rose-500" :
+                                  "bg-gray-400")
                         } />
                         {donation.status ? donation.status.charAt(0).toUpperCase() + donation.status.slice(1) : "Unknown"}
                       </span>

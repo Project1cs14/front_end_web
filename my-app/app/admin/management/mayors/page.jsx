@@ -177,7 +177,7 @@ function MaireDetailSidebar({ maire, isOpen, onClose }) {
 
           <h2 className="text-2xl font-bold text-white leading-tight mb-1">{info?.name || "Mayor"}</h2>
           <p className="text-blue-100 text-sm mb-4">{info?.email || "—"}</p>
-          
+
           {/* Status badge */}
           <div className="flex items-center gap-2">
             <span className={"inline-flex items-center gap-2 text-xs font-bold px-3.5 py-1.5 rounded-full " + (isActive ? "bg-emerald-400/25 text-emerald-100" : "bg-rose-400/25 text-rose-100")}>
@@ -272,8 +272,8 @@ function MaireDetailSidebar({ maire, isOpen, onClose }) {
 
         {/* Footer with action button */}
         <div className="p-4 border-t border-gray-100 bg-gradient-to-r from-gray-50 to-gray-50/50 flex gap-2">
-          <button 
-            onClick={onClose} 
+          <button
+            onClick={onClose}
             className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-semibold text-gray-700 hover:bg-white hover:border-gray-300 transition-all active:scale-95"
           >
             Close
@@ -415,9 +415,9 @@ export default function MairesPage() {
       // ✅ FIX: Use correct PATCH endpoint for deactivation
       const res = await fetch(`${BASE_URL}/admin/deactivate/${targetId}`, {
         method: "PATCH",
-        headers: { 
-          Authorization: `Bearer ${token}`, 
-          "Content-Type": "application/json" 
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
         body: JSON.stringify({ reason: reason }),
       });
@@ -464,9 +464,9 @@ export default function MairesPage() {
       // ✅ FIX: Use correct PATCH endpoint for activation
       const res = await fetch(`${BASE_URL}/admin/activate/${targetId}`, {
         method: "PATCH",
-        headers: { 
-          Authorization: `Bearer ${token}`, 
-          "Content-Type": "application/json" 
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
         },
       });
 
@@ -497,63 +497,63 @@ export default function MairesPage() {
     }
   };
 
- const handleCreateMaire = async (e) => {
-  e.preventDefault();
-  const token = getToken();
+  const handleCreateMaire = async (e) => {
+    e.preventDefault();
+    const token = getToken();
 
-  if (!form.quartier_id) {
-    setCreateError("Please select a commune.");
-    return;
-  }
-
-  if (communeHasMayor(form.quartier_id)) {
-    setCreateError("This commune already has a mayor assigned.");
-    return;
-  }
-
-  setCreating(true);
-  setCreateError(null);
-
-  try {
-    const payload = {
-      name: form.name.trim(),
-      email: form.email.trim(),
-      phone: form.phone.trim(),
-      wilaya: form.wilaya,
-      quartier_id: Number(form.quartier_id),
-    };
-
-    console.log("Sending payload:", payload); // 🔥 DEBUG
-
-    const res = await fetch(`${BASE_URL}/admin/maire`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
-
-    const data = await res.json();
-
-    if (!res.ok) {
-      throw new Error(data.message || "Failed to create mayor");
+    if (!form.quartier_id) {
+      setCreateError("Please select a commune.");
+      return;
     }
 
-    setShowCreateModal(false);
-    setForm({ name: "", email: "", phone: "", wilaya: "", quartier_id: "" });
-    setQuartiers([]);
+    if (communeHasMayor(form.quartier_id)) {
+      setCreateError("This commune already has a mayor assigned.");
+      return;
+    }
 
-    showToast("Mayor created successfully. Email sent.", "success");
+    setCreating(true);
+    setCreateError(null);
 
-    await fetchMaires();
-  } catch (err) {
-    console.error(err);
-    setCreateError(err.message);
-  } finally {
-    setCreating(false);
-  }
-};
+    try {
+      const payload = {
+        name: form.name.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        wilaya: form.wilaya,
+        quartier_id: Number(form.quartier_id),
+      };
+
+      console.log("Sending payload:", payload); // 🔥 DEBUG
+
+      const res = await fetch(`${BASE_URL}/admin/maire`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to create mayor");
+      }
+
+      setShowCreateModal(false);
+      setForm({ name: "", email: "", phone: "", wilaya: "", quartier_id: "" });
+      setQuartiers([]);
+
+      showToast("Mayor created successfully. Email sent.", "success");
+
+      await fetchMaires();
+    } catch (err) {
+      console.error(err);
+      setCreateError(err.message);
+    } finally {
+      setCreating(false);
+    }
+  };
 
   const closeModal = () => {
     setShowCreateModal(false);
