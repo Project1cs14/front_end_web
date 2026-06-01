@@ -213,19 +213,15 @@ export default function Admins() {
 
   // ── Try multiple candidate URLs/methods ──
   const tryToggle = async (token, targetId, action) => {
-    const candidateUrls = [
-      `${BASE_URL}/admin/admin-sec/${targetId}/${action}`,
-      `${BASE_URL}/admin/admin-sec/${action}/${targetId}`,
-      `${BASE_URL}/admin/${action}/${targetId}`,
-    ];
-    let res = null;
-    for (const url of candidateUrls) {
-      for (const method of ["PATCH", "PUT", "POST"]) {
-        res = await fetch(url, { method, headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" } });
-        if (res.ok || res.status === 404) break;
-      }
-      if (res?.ok) break;
-    }
+    // ✅ FIX: Use correct endpoint from backend documentation
+    const url = `${BASE_URL}/admin/${action}/${targetId}`;
+    const res = await fetch(url, { 
+      method: "PATCH", 
+      headers: { 
+        Authorization: `Bearer ${token}`, 
+        "Content-Type": "application/json" 
+      } 
+    });
     return res;
   };
 
@@ -237,25 +233,26 @@ export default function Admins() {
     setSuspendLoading(true);
     setTogglingId(targetId);
     try {
-      // Try the dedicated suspend endpoint first (with reason body)
-      const candidateUrls = [
-        `${BASE_URL}/admin/admin-sec/${targetId}/deactivate`,
-        `${BASE_URL}/admin/admin-sec/deactivate/${targetId}`,
-        `${BASE_URL}/admin/deactivate/${targetId}`,
-      ];
-      let res = null;
-      for (const url of candidateUrls) {
-        for (const method of ["PATCH", "PUT", "POST"]) {
-          res = await fetch(url, {
-            method,
-            headers: { Authorization: "Bearer " + token, "Content-Type": "application/json" },
-            body: JSON.stringify({ reason, notify_email: true }),
-          });
-          if (res.ok || res.status === 404) break;
-        }
-        if (res?.ok) break;
+      // ✅ FIX: Use correct PATCH endpoint for deactivation
+      const res = await fetch(`${BASE_URL}/admin/deactivate/${targetId}`, {
+        method: "PATCH",
+        headers: { 
+          Authorization: `Bearer ${token}`, 
+          "Content-Type": "application/json" 
+        },
+        body: JSON.stringify({ reason, notify_email: true }),
+      });
+
+      if (res.status === 401) { router.push("/LoginScreen"); return; }
+      if (!res.ok) {
+        let errMsg = "Failed to suspend admin";
+        try {
+          const errData = await res.json();
+          errMsg = errData.message || errMsg;
+        } catch { }
+        throw new Error(errMsg);
       }
-      if (!res?.ok) throw new Error("Suspend failed");
+
       setAdmins((prev) => prev.map((a) => (a.user_id || a.id) === targetId ? { ...a, is_active: 0 } : a));
       showToast(`${admin.name} suspended — notification sent to ${admin.email}`, "success");
       setSuspendTarget(null);
@@ -276,8 +273,25 @@ export default function Admins() {
     setActivateLoading(true);
     setTogglingId(targetId);
     try {
-      const res = await tryToggle(token, targetId, "activate");
-      if (!res?.ok) throw new Error("Activation failed");
+      // ✅ FIX: Use correct PATCH endpoint for activation
+      const res = await fetch(`${BASE_URL}/admin/activate/${targetId}`, {
+        method: "PATCH",
+        headers: { 
+          Authorization: `Bearer ${token}`, 
+          "Content-Type": "application/json" 
+        },
+      });
+
+      if (res.status === 401) { router.push("/LoginScreen"); return; }
+      if (!res.ok) {
+        let errMsg = "Failed to activate admin";
+        try {
+          const errData = await res.json();
+          errMsg = errData.message || errMsg;
+        } catch { }
+        throw new Error(errMsg);
+      }
+
       setAdmins((prev) => prev.map((a) => (a.user_id || a.id) === targetId ? { ...a, is_active: 1 } : a));
       showToast(`${admin.name} activated — confirmation sent to ${admin.email}`, "success");
       setActivateTarget(null);

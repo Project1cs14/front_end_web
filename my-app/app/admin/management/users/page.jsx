@@ -634,23 +634,17 @@ export default function UsersPage() {
   }, [fetchUsers, router]);
 
   const tryToggle = async (token, targetId, action, body = null) => {
-    const candidateUrls = [
-      `${BASE_URL}/admin/users/${action}/${targetId}`,
-      `${BASE_URL}/admin/${action}/${targetId}`,
-      `${BASE_URL}/admin/users/${targetId}/${action}`,
-    ];
-    for (const url of candidateUrls) {
-      for (const method of ["PATCH", "PUT", "POST"]) {
-        const res = await fetch(url, {
-          method,
-          headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          body: body ? JSON.stringify(body) : undefined,
-        });
-        if (res.ok) return res;
-        if (res.status !== 404) return res;
-      }
-    }
-    return null;
+    // ✅ FIX: Use correct PATCH endpoint from backend documentation
+    const url = `${BASE_URL}/admin/${action}/${targetId}`;
+    const res = await fetch(url, {
+      method: "PATCH",
+      headers: { 
+        Authorization: `Bearer ${token}`, 
+        "Content-Type": "application/json" 
+      },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    return res;
   };
 
   const handleSuspendConfirm = async (reason) => {
@@ -661,7 +655,17 @@ export default function UsersPage() {
     setTogglingId(targetId);
     try {
       const res = await tryToggle(token, targetId, "deactivate", { reason, notify_email: true });
-      if (!res?.ok) throw new Error("Suspend failed");
+      
+      if (res.status === 401) { router.push("/LoginScreen"); return; }
+      if (!res.ok) {
+        let errMsg = "Failed to suspend user";
+        try {
+          const errData = await res.json();
+          errMsg = errData.message || errMsg;
+        } catch { }
+        throw new Error(errMsg);
+      }
+
       setUsers((prev) => prev.map((u) =>
         (u.id || u.user_id) === targetId ? { ...u, is_active: 0 } : u
       ));
@@ -684,7 +688,17 @@ export default function UsersPage() {
     setTogglingId(targetId);
     try {
       const res = await tryToggle(token, targetId, "activate");
-      if (!res?.ok) throw new Error("Activation failed");
+      
+      if (res.status === 401) { router.push("/LoginScreen"); return; }
+      if (!res.ok) {
+        let errMsg = "Failed to activate user";
+        try {
+          const errData = await res.json();
+          errMsg = errData.message || errMsg;
+        } catch { }
+        throw new Error(errMsg);
+      }
+
       setUsers((prev) => prev.map((u) =>
         (u.id || u.user_id) === targetId ? { ...u, is_active: 1 } : u
       ));

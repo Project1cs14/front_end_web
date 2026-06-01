@@ -268,7 +268,7 @@ export default function Sidebar() {
 
       {/* Mobile: top navbar */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 py-3 bg-[#f8f8fc] border-b border-[#e8e8f0]">
-        <span className="text-sm font-bold text-[#001f5c]">Admin Panel</span>
+        <span className="text-sm font-bold text-[#001f5c]">Maire Panel</span>
         <button
           onClick={() => setMobileOpen(true)}
           className="p-2 rounded-lg text-[#4a4a6a] hover:bg-[#f0f0f8] transition-colors"

@@ -8,7 +8,10 @@ const BASE_URL = "https://back-end-sawu.onrender.com";
 
 function getToken() {
   if (typeof window === "undefined") return null;
-  return localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+  return localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken") ||
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("token");
 }
 
 async function apiFetch(path) {
@@ -162,14 +165,15 @@ function DonutChart({ data }) {
     return [CX + radius * Math.cos(rad), CY + radius * Math.sin(rad)];
   };
 
-  let startAngle = 0;
-  const segments = data.map((d, i) => {
+  const segments = data.reduce((acc, d, i) => {
     const pct = total > 0 ? d.total / total : 0;
     const sweep = pct * 360 - GAP_DEG;
+    const startAngle = acc.angle;
     const seg = { ...d, i, pct, startAngle, sweep, color: palette[i % palette.length] };
-    startAngle += pct * 360;
-    return seg;
-  });
+    acc.items.push(seg);
+    acc.angle += pct * 360;
+    return acc;
+  }, { angle: 0, items: [] }).items;
 
   const activeItem = hovered !== null ? segments[hovered] : null;
 
@@ -343,7 +347,7 @@ export default function Dashboard() {
     setReloading(true);
 
     try {
-      const [coreData, impactData, donationsData, citiesData, contributorsData, reportsData, pendingData] = await Promise.all([
+      const results = await Promise.allSettled([
         apiFetch("/statistics/CoreMetrics"),
         apiFetch("/statistics/ImpactMetrics"),
         apiFetch("/statistics/DonationsByCategory"),
@@ -353,13 +357,17 @@ export default function Dashboard() {
         apiFetch("/statistics/pendingsAndSuspiciousAndApprouved"),
       ]);
 
+      const [coreData, impactData, donationsData, citiesData, contributorsData, reportsData, pendingData] =
+        results.map((result) => result.status === "fulfilled" ? result.value : null);
+
       setCore(coreData);
       setImpact(impactData);
-      setDonations(donationsData);
-      setCities(citiesData);
+      setDonations(Array.isArray(donationsData) ? donationsData : []);
+      setCities(Array.isArray(citiesData) ? citiesData : []);
       setContributors(contributorsData);
       setReports(reportsData);
       setPending(pendingData);
+      setLoadError(results.some((result) => result.status === "rejected"));
     } catch (error) {
       setLoadError(true);
     } finally {

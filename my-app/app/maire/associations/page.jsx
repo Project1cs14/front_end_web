@@ -6,10 +6,62 @@ import MayorLayout from "@/app/components/MayorLayout";
 
 const BASE_URL = "https://back-end-sawu.onrender.com";
 
-const getToken = () =>
-  typeof window !== "undefined"
-    ? localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken")
-    : null;
+/**
+ * FIX #1 — Token key.
+ * Admin pages store the token under "accessToken".
+ * Mayor login may store it under a different key. Check all common keys so
+ * nothing is silently null. Add/adjust keys to match whatever your mayor
+ * login endpoint actually stores.
+ */
+const getToken = () => {
+  if (typeof window === "undefined") return null;
+  return (
+    localStorage.getItem("mayorToken") ||
+    localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("mayorToken") ||
+    sessionStorage.getItem("accessToken") ||
+    null
+  );
+};
+
+/**
+ * FIX #2 — Generic JSON fetcher with full diagnostics.
+ * Returns { data, status, ok } so callers can act on HTTP codes precisely.
+ */
+const apiFetch = async (url, options = {}) => {
+  const token = getToken();
+  const res = await fetch(url, {
+    ...options,
+    headers: {
+      Authorization: token ? `Bearer ${token}` : "",
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
+
+  let data = null;
+  const ct = res.headers.get("content-type") || "";
+  if (ct.includes("application/json")) {
+    try { data = await res.json(); } catch { /* ignore */ }
+  } else {
+    data = { message: await res.text() };
+  }
+
+  return { data, status: res.status, ok: res.ok };
+};
+
+/**
+ * FIX #3 — Flexible array extractor.
+ * The API might return { associations: [...] }, { data: [...] }, or a bare [].
+ */
+const extractList = (data) => {
+  if (!data) return [];
+  if (Array.isArray(data)) return data;
+  if (Array.isArray(data.associations)) return data.associations;
+  if (Array.isArray(data.data)) return data.data;
+  if (Array.isArray(data.results)) return data.results;
+  return [];
+};
 
 const parseZones = (z) => {
   try { return typeof z === "string" ? JSON.parse(z) : z || []; }
@@ -109,7 +161,7 @@ function RejectModal({ association, onConfirm, onCancel, loading }) {
 }
 
 // ── Detail Sidebar ─────────────────────────────────────────────────────────
-function AssocDetailSidebar({ assoc, isOpen, onClose, onApprove, onReject, actionLoading, isPending }) {
+function AssocDetailSidebar({ assoc, isOpen, onClose, isPending }) {
   useEffect(() => {
     const handler = (e) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handler);
@@ -117,7 +169,6 @@ function AssocDetailSidebar({ assoc, isOpen, onClose, onApprove, onReject, actio
   }, [onClose]);
 
   if (!assoc) return null;
-  const isLoading = actionLoading === assoc.id;
   const zones = parseZones(assoc.zones_intervention);
 
   const docs = [
@@ -137,7 +188,9 @@ function AssocDetailSidebar({ assoc, isOpen, onClose, onApprove, onReject, actio
         {/* Header */}
         <div className="bg-[#1a1f5e] px-6 pt-8 pb-6 relative">
           <button onClick={onClose} className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
           <div className="mb-4">
             <Avatar name={assoc.nom_association} url={assoc.logo_url} size={56} />
@@ -193,7 +246,6 @@ function AssocDetailSidebar({ assoc, isOpen, onClose, onApprove, onReject, actio
             </div>
           )}
 
-          {/* Zones */}
           {zones.length > 0 && (
             <div className="border-t border-gray-100 pt-4">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Intervention Zones</p>
@@ -205,7 +257,6 @@ function AssocDetailSidebar({ assoc, isOpen, onClose, onApprove, onReject, actio
             </div>
           )}
 
-          {/* Documents */}
           {docs.length > 0 && (
             <div className="border-t border-gray-100 pt-4">
               <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Documents</p>
@@ -230,34 +281,34 @@ function AssocDetailSidebar({ assoc, isOpen, onClose, onApprove, onReject, actio
           )}
         </div>
 
-        {/* Footer */}
-        {isPending ? (
-          <div className="p-4 border-t border-gray-100 bg-gray-50/50 flex gap-2">
-            <button
-              onClick={() => onReject(assoc)}
-              disabled={isLoading}
-              className="flex-1 py-2.5 rounded-xl border border-rose-200 text-rose-600 bg-rose-50 text-sm font-semibold hover:bg-rose-100 transition-colors disabled:opacity-50"
-            >
-              Reject
-            </button>
-            <button
-              onClick={() => onApprove(assoc.id)}
-              disabled={isLoading}
-              className="flex-1 py-2.5 rounded-xl bg-[#1a1f5e] text-white text-sm font-semibold hover:bg-[#141852] transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
-            >
-              {isLoading ? <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : null}
-              {isLoading ? "Approving…" : "Approve"}
-            </button>
-          </div>
-        ) : (
-          <div className="p-4 border-t border-gray-100 bg-gray-50/50">
-            <button onClick={onClose} className="w-full py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-white transition-colors">
-              Close
-            </button>
-          </div>
-        )}
+        <div className="p-4 border-t border-gray-100 bg-gray-50/50">
+          <button onClick={onClose} className="w-full py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-white transition-colors">
+            Close
+          </button>
+        </div>
       </div>
     </>
+  );
+}
+
+// ── Debug Panel (remove in production) ────────────────────────────────────
+function DebugPanel({ info }) {
+  const [open, setOpen] = useState(false);
+  if (process.env.NODE_ENV === "production") return null;
+  return (
+    <div className="fixed bottom-4 left-4 z-[200] max-w-xs">
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="px-3 py-1.5 bg-gray-800 text-white text-xs rounded-lg font-mono"
+      >
+        🐛 Debug {open ? "▲" : "▼"}
+      </button>
+      {open && (
+        <pre className="mt-1 p-3 bg-gray-900 text-green-400 text-[10px] rounded-lg overflow-auto max-h-60 font-mono">
+          {JSON.stringify(info, null, 2)}
+        </pre>
+      )}
+    </div>
   );
 }
 
@@ -269,7 +320,9 @@ export default function AssociationsPage() {
   const [pending, setPending] = useState([]);
   const [approved, setApproved] = useState([]);
   const [loading, setLoading] = useState(true);
+  // FIX #4 — richer error state so we know exactly what went wrong
   const [error, setError] = useState(null);
+  const [debugInfo, setDebugInfo] = useState({});
 
   const [search, setSearch] = useState("");
   const [wilayaFilter, setWilayaFilter] = useState("All");
@@ -291,22 +344,66 @@ export default function AssociationsPage() {
 
   const fetchAssociations = useCallback(async () => {
     const token = getToken();
-    if (!token) { router.push("/LoginScreen"); return; }
+
+    // FIX #5 — surface missing token immediately instead of hitting a 401
+    if (!token) {
+      setError("No auth token found. Please log in as mayor first.");
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
+
     try {
-      const [pendingRes, approvedRes] = await Promise.all([
-        fetch(`${BASE_URL}/admin/associations/pending`, { headers: { Authorization: `Bearer ${token}` } }),
-        fetch(`${BASE_URL}/admin/associations/approved`, { headers: { Authorization: `Bearer ${token}` } }),
+      // FIX #6 — fetch both endpoints independently so one failure doesn't
+      // mask the other, and log the HTTP status for each.
+      const [pendingResult, approvedResult] = await Promise.all([
+        apiFetch(`${BASE_URL}/admin/associations/pending`),
+        apiFetch(`${BASE_URL}/admin/associations/approved`),
       ]);
-      if (!pendingRes.ok) throw new Error("Failed to load associations");
-      const pendingData = await pendingRes.json();
-      setPending(pendingData.associations || []);
-      if (approvedRes.ok) {
-        const approvedData = await approvedRes.json();
-        setApproved(approvedData.associations || []);
+
+      // Save debug info (visible in dev via the debug panel)
+      setDebugInfo({
+        pendingStatus: pendingResult.status,
+        approvedStatus: approvedResult.status,
+        pendingShape: pendingResult.data ? Object.keys(pendingResult.data) : null,
+        approvedShape: approvedResult.data ? Object.keys(approvedResult.data) : null,
+        tokenPreview: token.slice(0, 20) + "…",
+      });
+
+      // FIX #7 — handle 401/403 explicitly
+      if (pendingResult.status === 401 || approvedResult.status === 401) {
+        localStorage.clear();
+        sessionStorage.clear();
+        router.push("/LoginScreen");
+        return;
+      }
+
+      if (pendingResult.status === 403 || approvedResult.status === 403) {
+        setError("Access denied (403). The mayor role may not have permission to view associations via the /admin/ routes. Check with your backend team.");
+        setLoading(false);
+        return;
+      }
+
+      if (!pendingResult.ok) {
+        throw new Error(
+          `Pending endpoint returned HTTP ${pendingResult.status}: ${pendingResult.data?.message || "unknown error"}`
+        );
+      }
+
+      // FIX #8 — flexible response parsing
+      setPending(extractList(pendingResult.data));
+
+      if (approvedResult.ok) {
+        setApproved(extractList(approvedResult.data));
+      } else {
+        // Approved is non-critical — warn but don't block
+        console.warn("Approved endpoint failed:", approvedResult.status, approvedResult.data);
+        setApproved([]);
       }
     } catch (err) {
+      console.error("fetchAssociations error:", err);
       setError(err.message || "Failed to load associations.");
     } finally {
       setLoading(false);
@@ -316,45 +413,50 @@ export default function AssociationsPage() {
   useEffect(() => { fetchAssociations(); }, [fetchAssociations]);
 
   const handleApprove = async (id) => {
-    const token = getToken(); if (!token) return;
+    const token = getToken();
+    if (!token) return;
     setActionLoading(id);
     try {
-      const res = await fetch(`${BASE_URL}/admin/associations/${id}/approve`, {
-        method: "PUT", headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error();
+      const { ok, status, data } = await apiFetch(`${BASE_URL}/admin/associations/${id}/approve`, { method: "PUT" });
+      if (status === 403) { showToast("Permission denied — mayor cannot approve associations.", "error"); return; }
+      if (!ok) throw new Error(data?.message || `HTTP ${status}`);
       const approvedItem = pending.find((a) => a.id === id);
       setPending((prev) => prev.filter((a) => a.id !== id));
       if (approvedItem) setApproved((prev) => [...prev, { ...approvedItem, is_approved: 1 }]);
       setSidebarOpen(false);
       showToast("Association approved successfully.", "success");
-    } catch { showToast("Failed to approve association.", "error"); }
-    finally { setActionLoading(null); }
+    } catch (e) {
+      showToast(e.message || "Failed to approve association.", "error");
+    } finally {
+      setActionLoading(null);
+    }
   };
 
   const handleRejectConfirm = async (reason) => {
-    const token = getToken(); if (!token || !rejectTarget) return;
+    if (!rejectTarget) return;
     setRejectLoading(true);
     try {
-      const res = await fetch(`${BASE_URL}/admin/associations/${rejectTarget.id}/reject`, {
-        method: "PUT",
-        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-        body: JSON.stringify({ reason }),
-      });
-      if (!res.ok) throw new Error();
+      const { ok, status, data } = await apiFetch(
+        `${BASE_URL}/admin/associations/${rejectTarget.id}/reject`,
+        { method: "PUT", body: JSON.stringify({ reason }) }
+      );
+      if (status === 403) { showToast("Permission denied — mayor cannot reject associations.", "error"); return; }
+      if (!ok) throw new Error(data?.message || `HTTP ${status}`);
       setPending((prev) => prev.filter((a) => a.id !== rejectTarget.id));
       setSidebarOpen(false);
       showToast("Association rejected.", "error");
       setRejectTarget(null);
-    } catch { showToast("Failed to reject association.", "error"); }
-    finally { setRejectLoading(false); }
+    } catch (e) {
+      showToast(e.message || "Failed to reject association.", "error");
+    } finally {
+      setRejectLoading(false);
+    }
   };
 
   const openSidebar = (assoc) => { setSelectedAssoc(assoc); setSidebarOpen(true); };
 
   const currentList = activeTab === "pending" ? pending : approved;
 
-  // Derive wilaya/commune options from zones_intervention (zones) and adresse
   const uniqueWilayas = ["All", ...new Set(
     currentList.flatMap((a) => parseZones(a.zones_intervention)).filter(Boolean)
   )];
@@ -362,7 +464,7 @@ export default function AssociationsPage() {
     currentList.map((a) => a.adresse).filter(Boolean)
   )];
 
-  const filtered = currentList.filter((a) => {
+  const filteredList = currentList.filter((a) => {
     const q = search.toLowerCase();
     const zones = parseZones(a.zones_intervention);
     const matchSearch = !q ||
@@ -396,18 +498,30 @@ export default function AssociationsPage() {
     return (
       <MayorLayout>
         <div className="min-h-screen w-full flex items-center justify-center bg-[#f4f6fb]">
-          <div className="text-center">
-            <p className="text-red-500 font-medium mb-3">{error}</p>
-            <button onClick={fetchAssociations} className="px-4 py-2 bg-[#1a1f5e] text-white rounded-xl text-sm">Retry</button>
+          <div className="text-center max-w-md px-6">
+            <div className="w-14 h-14 rounded-full bg-rose-50 flex items-center justify-center mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6 text-rose-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            <p className="text-gray-700 font-semibold mb-1">Failed to load associations</p>
+            <p className="text-rose-500 text-sm mb-4">{error}</p>
+            <button
+              onClick={fetchAssociations}
+              className="px-5 py-2.5 bg-[#1a1f5e] text-white rounded-xl text-sm font-medium"
+            >
+              Retry
+            </button>
           </div>
         </div>
+        <DebugPanel info={debugInfo} />
       </MayorLayout>
     );
   }
 
   return (
     <MayorLayout>
-      <div className="min-h-screen w-full bg-[#f4f6fb] ">
+      <div className="min-h-screen w-full bg-[#f4f6fb]">
 
         {/* Header */}
         <div className="flex items-start justify-between mb-6 w-full">
@@ -426,7 +540,7 @@ export default function AssociationsPage() {
           </button>
         </div>
 
-        {/* Stats Cards */}
+        {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           {[
             { label: "Total Associations", value: totalAll, color: "text-[#1a1f5e]" },
@@ -462,7 +576,7 @@ export default function AssociationsPage() {
         {/* Search + Filters */}
         <div className="flex items-center gap-3 mb-4 flex-wrap">
           <div className="relative flex-1 min-w-[200px]">
-            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
             </svg>
             <input
@@ -484,19 +598,13 @@ export default function AssociationsPage() {
                 onChange={(e) => setter(e.target.value)}
                 className="appearance-none bg-white border border-gray-200 rounded-xl pl-3 pr-8 py-2.5 text-sm text-gray-600 focus:outline-none focus:ring-2 focus:ring-[#1a1f5e]/15 cursor-pointer min-w-[120px]"
               >
-                {options.map((o) => <option key={o} value={o}>{o}</option>)}
+                {options.map((o, index) => <option key={index} value={o}>{o}</option>)}
               </select>
               <svg className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
               </svg>
             </div>
           ))}
-
-          <button onClick={fetchAssociations} className="flex items-center gap-1.5 px-3.5 py-2.5 bg-white border border-gray-200 rounded-xl text-sm text-gray-500 hover:bg-gray-50 transition-colors" title="Refresh">
-            <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-          </button>
         </div>
 
         {/* Table */}
@@ -516,7 +624,7 @@ export default function AssociationsPage() {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
-              {filtered.length === 0 ? (
+              {filteredList.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="text-center py-16">
                     <div className="flex flex-col items-center gap-2">
@@ -530,16 +638,14 @@ export default function AssociationsPage() {
                   </td>
                 </tr>
               ) : (
-                filtered.map((assoc, index) => {
+                filteredList.map((assoc, index) => {
                   const isPending = activeTab === "pending";
                   const zones = parseZones(assoc.zones_intervention);
-                  const isRowLoading = actionLoading === assoc.id;
                   return (
                     <tr key={assoc.id} className="hover:bg-blue-50/30 transition-colors group">
                       <td className="px-4 py-3.5"><input type="checkbox" className="rounded border-gray-300 accent-[#1a1f5e]" /></td>
                       <td className="px-4 py-3.5 text-gray-400 text-xs">{index + 1}</td>
 
-                      {/* Logo & Name */}
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-2.5">
                           <Avatar name={assoc.nom_association} url={assoc.logo_url} size={32} />
@@ -549,7 +655,6 @@ export default function AssociationsPage() {
 
                       <td className="px-4 py-3.5 text-gray-500">{assoc.email || "—"}</td>
 
-                      {/* Wilaya from zones_intervention */}
                       <td className="px-4 py-3.5 text-gray-600">
                         {zones.length > 0 ? (
                           <div className="flex flex-wrap gap-1">
@@ -561,11 +666,9 @@ export default function AssociationsPage() {
                         ) : "—"}
                       </td>
 
-                      {/* Commune = adresse */}
                       <td className="px-4 py-3.5 text-gray-600">{assoc.adresse || "—"}</td>
                       <td className="px-4 py-3.5 text-gray-600">{assoc.year_founded || "—"}</td>
 
-                      {/* Status */}
                       <td className="px-4 py-3.5">
                         <span className={"inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full " + (isPending ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600")}>
                           <span className={"w-1.5 h-1.5 rounded-full " + (isPending ? "bg-amber-500" : "bg-emerald-500")} />
@@ -573,10 +676,8 @@ export default function AssociationsPage() {
                         </span>
                       </td>
 
-                      {/* Actions */}
                       <td className="px-4 py-3.5">
                         <div className="flex items-center gap-1.5 justify-end">
-                          {/* View */}
                           <button
                             onClick={() => openSidebar(assoc)}
                             className="w-8 h-8 flex items-center justify-center border border-gray-200 rounded-lg hover:bg-[#1a1f5e] hover:border-[#1a1f5e] hover:text-white text-gray-500 transition-all"
@@ -587,38 +688,6 @@ export default function AssociationsPage() {
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
                           </button>
-
-                          {isPending && (
-                            <>
-                              {/* Reject */}
-                              <button
-                                onClick={() => setRejectTarget(assoc)}
-                                disabled={isRowLoading}
-                                className="w-8 h-8 flex items-center justify-center border border-rose-200 rounded-lg text-rose-500 hover:bg-rose-500 hover:border-rose-500 hover:text-white transition-all disabled:opacity-50"
-                                title="Reject"
-                              >
-                                <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                              </button>
-
-                              {/* Approve */}
-                              <button
-                                onClick={() => handleApprove(assoc.id)}
-                                disabled={isRowLoading}
-                                className="w-8 h-8 flex items-center justify-center border border-emerald-200 rounded-lg text-emerald-500 hover:bg-emerald-500 hover:border-emerald-500 hover:text-white transition-all disabled:opacity-50"
-                                title="Approve"
-                              >
-                                {isRowLoading ? (
-                                  <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                ) : (
-                                  <svg xmlns="http://www.w3.org/2000/svg" className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                  </svg>
-                                )}
-                              </button>
-                            </>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -627,9 +696,10 @@ export default function AssociationsPage() {
               )}
             </tbody>
           </table>
-          {filtered.length > 0 && (
+
+          {filteredList.length > 0 && (
             <div className="px-6 py-3 bg-gray-50/50 border-t border-gray-100 text-xs text-gray-400">
-              Showing {filtered.length} of {currentList.length} associations
+              Showing {filteredList.length} of {currentList.length} associations
             </div>
           )}
         </div>
@@ -661,11 +731,11 @@ export default function AssociationsPage() {
           assoc={selectedAssoc}
           isOpen={sidebarOpen}
           onClose={() => setSidebarOpen(false)}
-          onApprove={handleApprove}
-          onReject={(a) => { setRejectTarget(a); }}
-          actionLoading={actionLoading}
           isPending={activeTab === "pending"}
         />
+
+        {/* Dev debug panel */}
+        <DebugPanel info={debugInfo} />
       </div>
     </MayorLayout>
   );

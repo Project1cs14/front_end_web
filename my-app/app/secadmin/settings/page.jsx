@@ -1,19 +1,22 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import AdminLayout from "@/app/components/AdminLayout";
+import SecAdminLayout from "@/app/components/SecAdminLayout";
 import { User, Shield, Phone, Eye, EyeOff, Save, RefreshCw } from "lucide-react";
 
 const API_BASE = "https://back-end-sawu.onrender.com";
 
-// Improved token and user retrieval with validation
+// Helper functions
 const getToken = () => {
-  const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
-  if (!token) {
-    console.warn("No token found in storage");
-    return null;
-  }
+  const token = localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken") ||
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("token");
   return token;
+};
+
+const getRefreshToken = () => {
+  return localStorage.getItem("refreshToken") || sessionStorage.getItem("refreshToken");
 };
 
 const getStoredUser = () => {
@@ -24,6 +27,62 @@ const getStoredUser = () => {
   } catch (error) {
     console.error("Error parsing stored user:", error);
     return null;
+  }
+};
+
+const clearAuthData = () => {
+  localStorage.removeItem("accessToken");
+  localStorage.removeItem("token");
+  localStorage.removeItem("refreshToken");
+  localStorage.removeItem("user");
+  sessionStorage.removeItem("accessToken");
+  sessionStorage.removeItem("token");
+  sessionStorage.removeItem("refreshToken");
+  sessionStorage.removeItem("user");
+};
+
+const saveTokens = (accessToken, refreshToken) => {
+  const storage = localStorage;
+  storage.setItem("accessToken", accessToken);
+  storage.setItem("token", accessToken);
+  if (refreshToken) {
+    storage.setItem("refreshToken", refreshToken);
+  }
+};
+
+// Function to refresh the token
+const refreshAccessToken = async () => {
+  const refreshToken = getRefreshToken();
+  if (!refreshToken) {
+    throw new Error("No refresh token available");
+  }
+
+  try {
+    const response = await fetch(`${API_BASE}/auth/refreshtoken`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ refreshToken }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to refresh token");
+    }
+
+    const data = await response.json();
+    const newAccessToken = data.accessToken || data.token || data.access_token;
+    
+    if (newAccessToken) {
+      saveTokens(newAccessToken, refreshToken);
+      return newAccessToken;
+    }
+    
+    throw new Error("No access token in refresh response");
+  } catch (error) {
+    console.error("Token refresh failed:", error);
+    clearAuthData();
+    throw error;
   }
 };
 
@@ -47,7 +106,6 @@ export default function Settings() {
   const [passwordMsg, setPasswordMsg] = useState(null);
 
   useEffect(() => {
-    // Check if user is authenticated
     const token = getToken();
     if (!token) {
       router.push("/LoginScreen");
@@ -55,21 +113,20 @@ export default function Settings() {
     }
 
     const user = getStoredUser();
-    if (!user || (!user.id && !user._id)) {
+    const resolvedUserId = user?.user_id || user?.id || user?._id;
+    if (!user || !resolvedUserId) {
       console.error("No user ID found in storage");
       router.push("/LoginScreen");
       return;
     }
     
-    setUserId(user.id || user._id);
+    setUserId(resolvedUserId);
     
-    // Parse phone number to extract country code if it exists
     let phoneNumber = user.phone || "";
     let extractedCode = "+213";
     let extractedNumber = phoneNumber;
     
     if (phoneNumber.startsWith("+")) {
-      // Try to extract country code (assume codes are 3-4 digits)
       const match = phoneNumber.match(/^(\+\d{1,4})(.*)$/);
       if (match) {
         extractedCode = match[1];
@@ -89,15 +146,61 @@ export default function Settings() {
     setOriginalProfile(userProfile);
   }, [router]);
 
-  const handleProfileSave = async () => {
-    const token = getToken();
+  // Function to make authenticated fetch requests with auto-refresh
+  const fetchWithToken = async (url, options = {}, retryCount = 0) => {
+    let token = getToken();
     if (!token) {
-      setProfileMsg({ type: "error", text: "Session expired. Please login again." });
-      setTimeout(() => router.push("/LoginScreen"), 2000);
+      clearAuthData();
+      router.push("/LoginScreen");
+      throw new Error("No authentication token found");
+    }
+
+    const headers = {
+      "Content-Type": "application/json",
+      "Accept": "application/json",
+      "Authorization": `Bearer ${token}`,
+      ...options.headers,
+    };
+
+    try {
+      const response = await fetch(url, { ...options, headers });
+      
+      // If unauthorized and we haven't retried yet, try to refresh token
+      if (response.status === 401 && retryCount === 0) {
+        console.log("Token expired, attempting to refresh...");
+        try {
+          const newToken = await refreshAccessToken();
+          // Retry the request with new token
+          return fetchWithToken(url, options, retryCount + 1);
+        } catch (refreshError) {
+          console.error("Token refresh failed:", refreshError);
+          clearAuthData();
+          router.push("/LoginScreen");
+          throw new Error("Session expired. Please login again.");
+        }
+      }
+      
+      if (response.status === 401 || response.status === 403) {
+        clearAuthData();
+        router.push("/LoginScreen");
+        throw new Error("Session expired. Please login again.");
+      }
+      
+      return response;
+    } catch (error) {
+      if (error.message.includes("fetch")) {
+        throw new Error("Network error. Please check your connection.");
+      }
+      throw error;
+    }
+  };
+
+  const handleProfileSave = async () => {
+    if (!userId) {
+      setProfileMsg({ type: "error", text: "User information not loaded." });
       return;
     }
 
-    // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (profile.email && !emailRegex.test(profile.email)) {
       setProfileMsg({ type: "error", text: "Please enter a valid email address." });
@@ -107,7 +210,6 @@ export default function Settings() {
     setProfileLoading(true);
     setProfileMsg(null);
     
-    // Build update object with only fields that have changed
     const updateData = {};
     if (profile.name && profile.name.trim() !== originalProfile.name) {
       updateData.name = profile.name.trim();
@@ -116,7 +218,6 @@ export default function Settings() {
       updateData.email = profile.email.trim();
     }
     
-    // Combine country code with phone number
     const fullPhoneNumber = profile.phone ? `${countryCode}${profile.phone.trim()}` : "";
     if (fullPhoneNumber !== (originalProfile.phone ? `${countryCode}${originalProfile.phone}` : "")) {
       updateData.phone = fullPhoneNumber;
@@ -133,12 +234,8 @@ export default function Settings() {
     }
     
     try {
-      const response = await fetch(`${API_BASE}/admin/update/${userId}`, {
+      const response = await fetchWithToken(`${API_BASE}/admin/update/${userId}`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
         body: JSON.stringify(updateData),
       });
       
@@ -154,12 +251,6 @@ export default function Settings() {
       if (!response.ok) {
         if (response.status === 400) {
           throw new Error(data.message || "Invalid data. Please check your email format.");
-        } else if (response.status === 401) {
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("user");
-          sessionStorage.removeItem("accessToken");
-          sessionStorage.removeItem("user");
-          throw new Error("Session expired. Please login again.");
         } else if (response.status === 409) {
           throw new Error("Email already exists. Please use a different email address.");
         } else {
@@ -167,7 +258,6 @@ export default function Settings() {
         }
       }
       
-      // Update storage with new data
       const storage = localStorage.getItem("user") ? localStorage : sessionStorage;
       const stored = getStoredUser();
       if (stored) {
@@ -187,23 +277,29 @@ export default function Settings() {
   };
 
   const handlePasswordUpdate = async () => {
-    const token = getToken();
-    if (!token) {
-      setPasswordMsg({ type: "error", text: "Session expired. Please login again." });
-      setTimeout(() => router.push("/LoginScreen"), 2000);
+    // Validations
+    if (!passwords.currentPassword) {
+      setPasswordMsg({ type: "error", text: "Current password is required." });
       return;
     }
-
+    
+    if (!passwords.newPassword) {
+      setPasswordMsg({ type: "error", text: "New password is required." });
+      return;
+    }
+    
     if (passwords.newPassword !== passwords.confirm_password) {
       setPasswordMsg({ type: "error", text: "New passwords do not match." });
       return;
     }
+    
     if (passwords.newPassword.length < 8) {
       setPasswordMsg({ type: "error", text: "New password must be at least 8 characters." });
       return;
     }
-    if (!passwords.currentPassword) {
-      setPasswordMsg({ type: "error", text: "Current password is required." });
+    
+    if (passwords.newPassword === passwords.currentPassword) {
+      setPasswordMsg({ type: "error", text: "New password must be different from current password." });
       return;
     }
     
@@ -211,43 +307,54 @@ export default function Settings() {
     setPasswordMsg(null);
     
     try {
-      const response = await fetch(`${API_BASE}/auth/web/changepassword`, {
+      const requestBody = {
+        currentPassword: passwords.currentPassword,
+        newPassword: passwords.newPassword,
+        confirm_password: passwords.confirm_password
+      };
+      
+      console.log("Attempting password change...");
+      
+      const response = await fetchWithToken(`${API_BASE}/auth/web/changepassword`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          currentPassword: passwords.currentPassword,
-          newPassword: passwords.newPassword,
-          confirm_password: passwords.confirm_password,
-        }),
+        body: JSON.stringify(requestBody),
       });
       
       const responseText = await response.text();
+      console.log("Response status:", response.status);
+      console.log("Response body:", responseText);
+      
       let data;
       try {
         data = JSON.parse(responseText);
       } catch (e) {
-        data = { message: responseText };
+        data = { message: responseText || "Password updated successfully" };
       }
       
-      if (response.status === 401) {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("user");
-        sessionStorage.removeItem("accessToken");
-        sessionStorage.removeItem("user");
-        throw new Error("Session expired. Please login again.");
+      if (!response.ok) {
+        if (response.status === 400) {
+          throw new Error(data.message || "Invalid request. Please check your current password.");
+        } else if (response.status === 401) {
+          throw new Error("Current password is incorrect.");
+        } else if (response.status === 403) {
+          throw new Error("You don't have permission to change password.");
+        } else {
+          throw new Error(data.message || `Server error: ${response.status}`);
+        }
       }
       
-      if (!response.ok) throw new Error(data.message || "Failed to update password");
-      
+      // Success
       setPasswordMsg({ type: "success", text: "Password updated successfully!" });
       setPasswords({ currentPassword: "", newPassword: "", confirm_password: "" });
+      
       setTimeout(() => setPasswordMsg(null), 3000);
+      
     } catch (err) {
       console.error("Password update error:", err);
-      setPasswordMsg({ type: "error", text: err.message || "Failed to update password." });
+      setPasswordMsg({ 
+        type: "error", 
+        text: err.message || "Failed to update password. Please try again." 
+      });
     } finally {
       setPasswordLoading(false);
     }
@@ -255,24 +362,25 @@ export default function Settings() {
 
   if (!userId) {
     return (
-      <AdminLayout>
+      <SecAdminLayout>
         <div style={styles.page}>
           <div style={styles.card}>
             <p>Loading...</p>
           </div>
         </div>
-      </AdminLayout>
+      </SecAdminLayout>
     );
   }
 
   return (
-    <AdminLayout>
+    <SecAdminLayout>
       <div style={styles.page}>
         <div style={styles.header}>
           <h1 style={styles.title}>Account Settings</h1>
           <p style={styles.subtitle}>Manage your personal information and security preferences.</p>
         </div>
 
+        {/* Profile Information Card */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <User size={20} color="#1e2d6b" />
@@ -340,6 +448,7 @@ export default function Settings() {
           </div>
         </div>
 
+        {/* Security Card - Password Change */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <Shield size={20} color="#1e2d6b" />
@@ -355,7 +464,7 @@ export default function Settings() {
                   type={showCurrent ? "text" : "password"}
                   value={passwords.currentPassword}
                   onChange={(e) => setPasswords({ ...passwords, currentPassword: e.target.value })}
-                  placeholder="Current password"
+                  placeholder="Enter current password"
                 />
                 <button style={styles.eyeBtn} onClick={() => setShowCurrent(!showCurrent)} type="button">
                   {showCurrent ? <EyeOff size={18} color="#94a3b8" /> : <Eye size={18} color="#94a3b8" />}
@@ -410,6 +519,7 @@ export default function Settings() {
           </div>
         </div>
 
+        {/* Contact Information Card */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <Phone size={20} color="#1e2d6b" />
@@ -463,9 +573,12 @@ export default function Settings() {
       </div>
 
       <style>{`
-        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes spin { 
+          from { transform: rotate(0deg); } 
+          to { transform: rotate(360deg); } 
+        }
       `}</style>
-    </AdminLayout>
+    </SecAdminLayout>
   );
 }
 
@@ -473,6 +586,7 @@ const styles = {
   page: {
     padding: "32px 24px",
     maxWidth: 900,
+    width: "100%",
     margin: "0 auto",
     display: "flex",
     flexDirection: "column",
@@ -519,6 +633,7 @@ const styles = {
     outline: "none",
     width: "100%",
     boxSizing: "border-box",
+    transition: "all 0.2s",
   },
   inputWrap: { position: "relative", display: "flex", alignItems: "center" },
   inputWithIcon: {
@@ -531,6 +646,7 @@ const styles = {
     outline: "none",
     width: "100%",
     boxSizing: "border-box",
+    transition: "all 0.2s",
   },
   eyeBtn: {
     position: "absolute",
@@ -567,6 +683,7 @@ const styles = {
     fontSize: 14,
     fontWeight: 600,
     cursor: "pointer",
+    transition: "all 0.2s",
   },
   btnOutline: {
     display: "flex",
@@ -580,6 +697,7 @@ const styles = {
     fontSize: 14,
     fontWeight: 600,
     cursor: "pointer",
+    transition: "all 0.2s",
   },
   btnDisabled: { opacity: 0.6, cursor: "not-allowed" },
   successMsg: {

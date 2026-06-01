@@ -409,32 +409,28 @@ export default function MairesPage() {
   const handleConfirmSuspend = async (reason) => {
     const token = getToken();
     const targetId = suspendingMaire.user_id || suspendingMaire.id;
-    const candidateUrls = [
-      `${BASE_URL}/admin/maire/${targetId}/deactivate`,
-      `${BASE_URL}/admin/maire/deactivate/${targetId}`,
-      `${BASE_URL}/admin/deactivate/${targetId}`,
-    ];
 
     setSuspendLoading(true);
     try {
-      let res = null;
-      for (const url of candidateUrls) {
-        for (const method of ["PATCH", "PUT", "POST"]) {
-          res = await fetch(url, {
-            method,
-            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-            body: JSON.stringify({
-              reason: reason,
-              suspend_reason: reason,
-              suspension_reason: reason,
-            }),
-          });
-          if (res.ok || res.status === 404) break;
-        }
-        if (res?.ok) break;
-      }
+      // ✅ FIX: Use correct PATCH endpoint for deactivation
+      const res = await fetch(`${BASE_URL}/admin/deactivate/${targetId}`, {
+        method: "PATCH",
+        headers: { 
+          Authorization: `Bearer ${token}`, 
+          "Content-Type": "application/json" 
+        },
+        body: JSON.stringify({ reason: reason }),
+      });
 
-      if (!res?.ok) throw new Error("Failed to suspend mayor");
+      if (res.status === 401) { router.push("/LoginScreen"); return; }
+      if (!res.ok) {
+        let errMsg = `Erreur ${res.status}`;
+        try {
+          const errData = await res.json();
+          errMsg = errData.message || errMsg;
+        } catch { }
+        throw new Error(errMsg);
+      }
 
       setMaires((prev) =>
         prev.map((m) =>
@@ -462,27 +458,27 @@ export default function MairesPage() {
   const handleConfirmActivate = async () => {
     const token = getToken();
     const targetId = activatingMaire.user_id || activatingMaire.id;
-    const candidateUrls = [
-      `${BASE_URL}/admin/maire/${targetId}/activate`,
-      `${BASE_URL}/admin/maire/activate/${targetId}`,
-      `${BASE_URL}/admin/activate/${targetId}`,
-    ];
 
     setActivateLoading(true);
     try {
-      let res = null;
-      for (const url of candidateUrls) {
-        for (const method of ["PATCH", "PUT", "POST"]) {
-          res = await fetch(url, {
-            method,
-            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-          });
-          if (res.ok || res.status === 404) break;
-        }
-        if (res?.ok) break;
-      }
+      // ✅ FIX: Use correct PATCH endpoint for activation
+      const res = await fetch(`${BASE_URL}/admin/activate/${targetId}`, {
+        method: "PATCH",
+        headers: { 
+          Authorization: `Bearer ${token}`, 
+          "Content-Type": "application/json" 
+        },
+      });
 
-      if (!res?.ok) throw new Error("Failed to activate mayor");
+      if (res.status === 401) { router.push("/LoginScreen"); return; }
+      if (!res.ok) {
+        let errMsg = `Erreur ${res.status}`;
+        try {
+          const errData = await res.json();
+          errMsg = errData.message || errMsg;
+        } catch { }
+        throw new Error(errMsg);
+      }
 
       setMaires((prev) =>
         prev.map((m) =>

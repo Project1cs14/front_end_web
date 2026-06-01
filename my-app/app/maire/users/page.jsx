@@ -14,6 +14,37 @@ const getToken = () =>
   null;
 
 
+// ── Star Rating Display ────────────────────────────────────────────────────
+function StarRating({ stars = 0 }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((s) => (
+        <svg
+          key={s}
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill={s <= stars ? "#fbbf24" : "none"}
+          stroke={s <= stars ? "#fbbf24" : "#e5e7eb"}
+          strokeWidth="1.5"
+          style={{ transition: "color .2s" }}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+          />
+        </svg>
+      ))}
+      {stars > 0 && (
+        <span style={{ fontSize: 11, color: "#6b7280", marginLeft: 4 }}>
+          {Number(stars).toFixed(1)}
+        </span>
+      )}
+    </div>
+  );
+}
+
 // ── Avatar ─────────────────────────────────────────────────────────────────
 function Avatar({ name, url, size = 32 }) {
   const [show, setShow] = useState(false);
@@ -744,6 +775,22 @@ export default function UsersPage() {
       if (sortKey === "name") {
         aVal = (a.name || a.first_name || a.email || "").toLowerCase();
         bVal = (b.name || b.first_name || b.email || "").toLowerCase();
+      } else if (sortKey === "status") {
+        aVal = a.is_active === 1 ? "active" : "suspended";
+        bVal = b.is_active === 1 ? "active" : "suspended";
+      } else if (sortKey === "points") {
+        const pA = Number(a.points || 0);
+        const pB = Number(b.points || 0);
+        return sortDir === "asc" ? pA - pB : pB - pA;
+      } else if (sortKey === "stars") {
+        const sA = Number(a.stars || 0);
+        const sB = Number(b.stars || 0);
+        return sortDir === "asc" ? sA - sB : sB - sA;
+      } else if (sortKey === "location") {
+        const locA = [a.quartier_nom, a.quartier_wilaya].filter(Boolean).join(", ");
+        const locB = [b.quartier_nom, b.quartier_wilaya].filter(Boolean).join(", ");
+        aVal = locA.toLowerCase();
+        bVal = locB.toLowerCase();
       } else {
         aVal = String(a[sortKey] || "").toLowerCase();
         bVal = String(b[sortKey] || "").toLowerCase();
@@ -765,6 +812,9 @@ export default function UsersPage() {
     { key: "name", label: "Name" },
     { key: "email", label: "Email" },
     { key: "phone", label: "Phone" },
+    { key: "location", label: "Location" },
+    { key: "points", label: "Points" },
+    { key: "stars", label: "Rating" },
     { key: "status", label: "Status" },
   ];
 
@@ -1001,7 +1051,7 @@ export default function UsersPage() {
               <tbody>
                 {loading && [...Array(6)].map((_, i) => (
                   <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                    {[36, 140, 180, 100, 60].map((w, j) => (
+                    {[36, 140, 180, 100, 140, 60, 80, 60, 100].map((w, j) => (
                       <td key={j} style={{ padding: "12px 16px" }}>
                         <div style={{
                           height: 12,
@@ -1017,7 +1067,7 @@ export default function UsersPage() {
 
                 {!loading && !error && filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ padding: "60px 24px", textAlign: "center" }}>
+                    <td colSpan={9} style={{ padding: "60px 24px", textAlign: "center" }}>
                       <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>
                         {search ? "No users match your search" : "No users found"}
                       </p>
@@ -1084,6 +1134,37 @@ export default function UsersPage() {
                         color: "#374151",
                       }}>
                         {user.phone || "—"}
+                      </td>
+
+                      <td style={{ padding: "12px 16px", fontSize: 13, color: "#4b5563" }}>
+                        {[user.quartier_nom, user.quartier_wilaya].filter(Boolean).join(", ") || "—"}
+                      </td>
+
+                      <td style={{ padding: "12px 16px" }}>
+                        {user.points != null ? (
+                          <span style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            padding: "2px 8px",
+                            borderRadius: 12,
+                            background: "#e0e7ff",
+                            color: "#4f46e5",
+                          }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            {user.points}
+                          </span>
+                        ) : (
+                          <span style={{ color: "#d1d5db", fontSize: 13 }}>—</span>
+                        )}
+                      </td>
+
+                      <td style={{ padding: "12px 16px" }}>
+                        <StarRating stars={user.stars || 0} />
                       </td>
 
                       <td style={{

@@ -1,14 +1,17 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import AdminLayout from "@/app/components/AdminLayout";
+import MaireLayout from "@/app/components/MayorLayout";
 import { User, Shield, Phone, Eye, EyeOff, Save, RefreshCw } from "lucide-react";
 
 const API_BASE = "https://back-end-sawu.onrender.com";
 
 // Improved token and user retrieval with validation
 const getToken = () => {
-  const token = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+  const token = localStorage.getItem("accessToken") ||
+    sessionStorage.getItem("accessToken") ||
+    localStorage.getItem("token") ||
+    sessionStorage.getItem("token");
   if (!token) {
     console.warn("No token found in storage");
     return null;
@@ -32,6 +35,7 @@ export default function Settings() {
   const [profile, setProfile] = useState({ name: "", email: "", phone: "", wilaya: "" });
   const [originalProfile, setOriginalProfile] = useState({});
   const [userId, setUserId] = useState(null);
+  const [profileRole, setProfileRole] = useState(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [profileMsg, setProfileMsg] = useState(null);
   const [countryCode, setCountryCode] = useState("+213");
@@ -45,6 +49,7 @@ export default function Settings() {
   const [showNew, setShowNew] = useState(false);
   const [passwordLoading, setPasswordLoading] = useState(false);
   const [passwordMsg, setPasswordMsg] = useState(null);
+  const canUpdateProfile = profileRole !== "maire";
 
   useEffect(() => {
     // Check if user is authenticated
@@ -55,13 +60,22 @@ export default function Settings() {
     }
 
     const user = getStoredUser();
-    if (!user || (!user.id && !user._id)) {
+    const resolvedUserId = user.user_id || user.id || user._id;
+    if (!user || !resolvedUserId) {
       console.error("No user ID found in storage");
       router.push("/LoginScreen");
       return;
     }
     
-    setUserId(user.id || user._id);
+    setUserId(resolvedUserId);
+    const role = user.role || user.type || null;
+    setProfileRole(role);
+    if (role === "maire") {
+      setProfileMsg({
+        type: "info",
+        text: "The current API docs only expose profile updates for admin and admin_sec accounts. Password updates are available for maire accounts.",
+      });
+    }
     
     // Parse phone number to extract country code if it exists
     let phoneNumber = user.phone || "";
@@ -90,6 +104,14 @@ export default function Settings() {
   }, [router]);
 
   const handleProfileSave = async () => {
+    if (!canUpdateProfile) {
+      setProfileMsg({
+        type: "error",
+        text: "Profile updates are not exposed for maire accounts in the current API. You can still update your password.",
+      });
+      return;
+    }
+
     const token = getToken();
     if (!token) {
       setProfileMsg({ type: "error", text: "Session expired. Please login again." });
@@ -133,6 +155,10 @@ export default function Settings() {
     }
     
     try {
+      console.log("Updating profile with data:", updateData);
+      console.log("User ID:", userId);
+      console.log("Full URL:", `${API_BASE}/admin/update/${userId}`);
+      
       const response = await fetch(`${API_BASE}/admin/update/${userId}`, {
         method: "PUT",
         headers: {
@@ -142,7 +168,12 @@ export default function Settings() {
         body: JSON.stringify(updateData),
       });
       
+      console.log("Response status:", response.status);
+      
+      // Try to get the response text
       const responseText = await response.text();
+      console.log("Response raw:", responseText);
+      
       let data;
       try {
         data = JSON.parse(responseText);
@@ -177,6 +208,8 @@ export default function Settings() {
       }
       
       setProfileMsg({ type: "success", text: "Profile updated successfully!" });
+      
+      // Clear success message after 3 seconds
       setTimeout(() => setProfileMsg(null), 3000);
     } catch (err) {
       console.error("Profile update error:", err);
@@ -225,6 +258,7 @@ export default function Settings() {
       });
       
       const responseText = await response.text();
+      
       let data;
       try {
         data = JSON.parse(responseText);
@@ -244,6 +278,7 @@ export default function Settings() {
       
       setPasswordMsg({ type: "success", text: "Password updated successfully!" });
       setPasswords({ currentPassword: "", newPassword: "", confirm_password: "" });
+      
       setTimeout(() => setPasswordMsg(null), 3000);
     } catch (err) {
       console.error("Password update error:", err);
@@ -253,26 +288,28 @@ export default function Settings() {
     }
   };
 
+  // Don't render if no userId (will redirect)
   if (!userId) {
     return (
-      <AdminLayout>
+      <MaireLayout>
         <div style={styles.page}>
           <div style={styles.card}>
             <p>Loading...</p>
           </div>
         </div>
-      </AdminLayout>
+      </MaireLayout>
     );
   }
 
   return (
-    <AdminLayout>
+    <MaireLayout>
       <div style={styles.page}>
         <div style={styles.header}>
           <h1 style={styles.title}>Account Settings</h1>
           <p style={styles.subtitle}>Manage your personal information and security preferences.</p>
         </div>
 
+        {/* Profile Information Card */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <User size={20} color="#1e2d6b" />
@@ -323,23 +360,24 @@ export default function Settings() {
           </div>
 
           {profileMsg && (
-            <p style={profileMsg.type === "success" ? styles.successMsg : styles.errorMsg}>
+              <p style={profileMsg.type === "success" ? styles.successMsg : profileMsg.type === "info" ? styles.infoMsg : styles.errorMsg}>
               {profileMsg.text}
             </p>
           )}
 
           <div style={styles.actionRow}>
             <button
-              style={profileLoading ? { ...styles.btnPrimary, ...styles.btnDisabled } : styles.btnPrimary}
-              onClick={handleProfileSave}
-              disabled={profileLoading}
+            style={(profileLoading || !canUpdateProfile) ? { ...styles.btnPrimary, ...styles.btnDisabled } : styles.btnPrimary}
+            onClick={handleProfileSave}
+            disabled={profileLoading || !canUpdateProfile}
             >
               {profileLoading ? <RefreshCw size={16} style={styles.spin} /> : <Save size={16} />}
-              <span>{profileLoading ? "Saving..." : "Save Changes"}</span>
+            <span>{!canUpdateProfile ? "Profile Update Unavailable" : profileLoading ? "Saving..." : "Save Changes"}</span>
             </button>
           </div>
         </div>
 
+        {/* Security Card */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <Shield size={20} color="#1e2d6b" />
@@ -410,6 +448,7 @@ export default function Settings() {
           </div>
         </div>
 
+        {/* Contact Information Card */}
         <div style={styles.card}>
           <div style={styles.cardHeader}>
             <Phone size={20} color="#1e2d6b" />
@@ -451,12 +490,12 @@ export default function Settings() {
 
           <div style={styles.actionRow}>
             <button
-              style={profileLoading ? { ...styles.btnPrimary, ...styles.btnDisabled } : styles.btnPrimary}
-              onClick={handleProfileSave}
-              disabled={profileLoading}
+            style={(profileLoading || !canUpdateProfile) ? { ...styles.btnPrimary, ...styles.btnDisabled } : styles.btnPrimary}
+            onClick={handleProfileSave}
+            disabled={profileLoading || !canUpdateProfile}
             >
               {profileLoading ? <RefreshCw size={16} style={styles.spin} /> : <Save size={16} />}
-              <span>{profileLoading ? "Updating..." : "Update Contact"}</span>
+            <span>{!canUpdateProfile ? "Profile Update Unavailable" : profileLoading ? "Updating..." : "Update Contact"}</span>
             </button>
           </div>
         </div>
@@ -465,7 +504,7 @@ export default function Settings() {
       <style>{`
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
-    </AdminLayout>
+    </MaireLayout>
   );
 }
 
@@ -473,6 +512,7 @@ const styles = {
   page: {
     padding: "32px 24px",
     maxWidth: 900,
+    width: "100%",
     margin: "0 auto",
     display: "flex",
     flexDirection: "column",
@@ -599,6 +639,15 @@ const styles = {
     background: "#fef2f2",
     borderRadius: 6,
     border: "1px solid #fecaca",
+  },
+  infoMsg: {
+    color: "#1d4ed8",
+    fontSize: 13,
+    margin: 0,
+    padding: "8px 12px",
+    background: "#eff6ff",
+    borderRadius: 6,
+    border: "1px solid #bfdbfe",
   },
   spin: { animation: "spin 1s linear infinite" },
 };

@@ -90,14 +90,14 @@ export default function LoginForm() {
   };
 
   const redirectByRole = (role) => {
-    switch (role) {
+    switch ((role || "").toLowerCase()) {
       case "admin":
         router.push("/admin/Dashboard");
         break;
       case "maire":
         router.push("/maire/Dashboard");
         break;
-        case "admin_sec":
+      case "admin_sec":
         router.push("/secadmin/Dashboard");
         break;
       default:
@@ -126,12 +126,20 @@ export default function LoginForm() {
       );
 
       setRetryMsg("");
-      const storage = rememberMe ? localStorage : sessionStorage;
-      storage.setItem("accessToken", data.accessToken);
-      storage.setItem("refreshToken", data.refreshToken);
-      storage.setItem("user", JSON.stringify(data.user));
+      const accessToken = data.accessToken || data.access_token || data.token;
+      const refreshToken = data.refreshToken || data.refresh_token;
+      const user = data.user || data.data?.user;
 
-      redirectByRole(data.user?.role);
+      if (!accessToken || !user) {
+        throw new Error("Login succeeded, but the server response did not include a session.");
+      }
+
+      const storage = rememberMe ? localStorage : sessionStorage;
+      storage.setItem("accessToken", accessToken);
+      if (refreshToken) storage.setItem("refreshToken", refreshToken);
+      storage.setItem("user", JSON.stringify(user));
+
+      redirectByRole(user?.role || user?.type);
     } catch (err) {
       setRetryMsg("");
       setError(err.message || "Login failed. Please try again.");

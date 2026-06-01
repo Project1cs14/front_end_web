@@ -185,11 +185,13 @@ export default function Analytics() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    const accessToken = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
-    const userData = localStorage.getItem("user") || sessionStorage.getItem("user");
-    if (!accessToken || !userData) { setUser(null); setToken(null); return; }
-    try { setUser(JSON.parse(userData)); setToken(accessToken); }
-    catch { setUser(null); setToken(null); }
+    queueMicrotask(() => {
+      const accessToken = localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken");
+      const userData = localStorage.getItem("user") || sessionStorage.getItem("user");
+      if (!accessToken || !userData) { setUser(null); setToken(null); return; }
+      try { setUser(JSON.parse(userData)); setToken(accessToken); }
+      catch { setUser(null); setToken(null); }
+    });
   }, []);
 
   useEffect(() => { if (user === null) router.push("/LoginScreen"); }, [user, router]);
@@ -206,7 +208,7 @@ export default function Analytics() {
       { key: "growth",      fn: () => fetchJSON("/statistics/GrowthMetrics", token),         setter: setGrowth },
       { key: "engagement",  fn: () => fetchJSON("/statistics/EngagementMetrics", token),     setter: setEngagement },
       { key: "reports",     fn: () => fetchJSON("/statistics/ReportsInfo", token),           setter: setReports },
-      { key: "pending",     fn: () => fetchJSON("/statistics/pendingsAndSuspicious", token), setter: setPending },
+      { key: "pending",     fn: () => fetchJSON("/statistics/pendingsAndSuspiciousAndApprouved", token), setter: setPending },
     ];
     let hasAuthError = false;
     Promise.all(fetchers.map(({ key, fn, setter }) =>
@@ -218,7 +220,7 @@ export default function Analytics() {
       if (hasAuthError) router.push("/LoginScreen");
       else setLoading(false);
     });
-  }, [token, user]);
+  }, [token, user, router]);
 
   if (!user) return null;
   if (loading) return (

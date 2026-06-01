@@ -35,7 +35,7 @@ function ConfirmModal({ title, message, confirmText, cancelText, onConfirm, onCa
               </div>
             </div>
           )}
-          
+
           <h3 style={{ fontSize: 18, fontWeight: 600, color: "#1f2937", margin: "0 0 8px 0", textAlign: "center" }}>{title}</h3>
           <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px 0", lineHeight: 1.6, textAlign: "center" }}>{message}</p>
 
@@ -57,8 +57,6 @@ function ConfirmModal({ title, message, confirmText, cancelText, onConfirm, onCa
                 transition: "all .2s",
                 opacity: loading ? 0.6 : 1,
               }}
-              onMouseEnter={(e) => { if (!loading) e.target.style.background = "#f3f4f6"; }}
-              onMouseLeave={(e) => { e.target.style.background = "#fff"; }}
             >
               {cancelText}
             </button>
@@ -76,11 +74,9 @@ function ConfirmModal({ title, message, confirmText, cancelText, onConfirm, onCa
                 fontWeight: 600,
                 fontFamily: "system-ui",
                 cursor: loading ? "not-allowed" : "pointer",
-                opacity: loading ? 0.6 : 1,
-                transition: "all .2s",
+                opacity: loading ? 0.7 : 1,
+                transition: "opacity .2s",
               }}
-              onMouseEnter={(e) => { if (!loading) e.target.style.opacity = "0.9"; }}
-              onMouseLeave={(e) => { e.target.style.opacity = "1"; }}
             >
               {loading ? "Processing..." : confirmText}
             </button>
@@ -91,7 +87,152 @@ function ConfirmModal({ title, message, confirmText, cancelText, onConfirm, onCa
   );
 }
 
-// ── Avatar ─────────────────────────────────────────────────────────────────
+// ── Suspension Reason Modal ────────────────────────────────────────────────
+function SuspensionReasonModal({ title, message, onConfirm, onCancel, loading = false }) {
+  const [reason, setReason] = useState("");
+
+  const handleConfirm = () => {
+    if (!reason.trim()) {
+      alert("Please provide a reason for suspension");
+      return;
+    }
+    onConfirm(reason);
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 150, display: "flex", alignItems: "center", justifyContent: "center", padding: 16, background: "rgba(0,0,0,0.5)", backdropFilter: "blur(4px)" }}>
+      <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.12)", overflow: "hidden" }}>
+        <div style={{ padding: "24px" }}>
+          <div style={{ display: "flex", justifyContent: "center", marginBottom: 16 }}>
+            <div style={{
+              width: 48,
+              height: 48,
+              borderRadius: "50%",
+              background: "#fef2f2",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "#dc2626",
+            }}>
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="12" cy="12" r="10" />
+                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
+              </svg>
+            </div>
+          </div>
+
+          <h3 style={{ fontSize: 18, fontWeight: 600, color: "#1f2937", margin: "0 0 8px 0", textAlign: "center" }}>{title}</h3>
+          <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 20px 0", lineHeight: 1.6, textAlign: "center" }}>{message}</p>
+
+          <div style={{ marginBottom: 20 }}>
+            <label style={{ display: "block", fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
+              Reason for suspension *
+            </label>
+            <textarea
+              value={reason}
+              onChange={(e) => setReason(e.target.value)}
+              placeholder="Please provide a detailed reason for suspending this user..."
+              rows={4}
+              style={{
+                width: "100%",
+                padding: "10px 12px",
+                border: "1px solid #d1d5db",
+                borderRadius: 8,
+                fontSize: 13,
+                fontFamily: "system-ui",
+                resize: "vertical",
+                outline: "none",
+                transition: "border-color .2s",
+              }}
+              className="reason-textarea"
+            />
+            <style>{`
+              .reason-textarea:focus {
+                border-color: #3b82f6;
+              }
+            `}</style>
+          </div>
+
+          <div style={{ display: "flex", gap: 12 }}>
+            <button
+              onClick={onCancel}
+              disabled={loading}
+              style={{
+                flex: 1,
+                padding: "10px 0",
+                borderRadius: 8,
+                border: "1px solid #d1d5db",
+                background: "#fff",
+                color: "#6b7280",
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: "system-ui",
+                cursor: loading ? "not-allowed" : "pointer",
+                transition: "all .2s",
+                opacity: loading ? 0.6 : 1,
+              }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleConfirm}
+              disabled={loading}
+              style={{
+                flex: 1,
+                padding: "10px 0",
+                borderRadius: 8,
+                border: "none",
+                background: "#dc2626",
+                color: "#fff",
+                fontSize: 13,
+                fontWeight: 600,
+                fontFamily: "system-ui",
+                cursor: loading ? "not-allowed" : "pointer",
+                opacity: loading ? 0.7 : 1,
+                transition: "opacity .2s",
+              }}
+            >
+              {loading ? "Processing..." : "Suspend Account"}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Star Rating Display ────────────────────────────────────────────────────
+function StarRating({ stars = 0 }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 2 }}>
+      {[1, 2, 3, 4, 5].map((s) => (
+        <svg
+          key={s}
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill={s <= stars ? "#fbbf24" : "none"}
+          stroke={s <= stars ? "#fbbf24" : "#e5e7eb"}
+          strokeWidth="1.5"
+          style={{ transition: "color .2s" }}
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"
+          />
+        </svg>
+      ))}
+      {stars > 0 && (
+        <span style={{ fontSize: 11, color: "#6b7280", marginLeft: 4 }}>
+          {Number(stars).toFixed(1)}
+        </span>
+      )}
+    </div>
+  );
+}
+
+// ── Avatar Component ────────────────────────────────────────────────────────
 function Avatar({ name, url, size = 32 }) {
   const [show, setShow] = useState(false);
   const letter = name?.charAt(0)?.toUpperCase() || "?";
@@ -172,7 +313,7 @@ function Avatar({ name, url, size = 32 }) {
   );
 }
 
-// ── Detail Drawer ─────────────────────────────────────────────────────────
+// ── Detail Drawer ──────────────────────────────────────────────────────────
 function DetailDrawer({ user, onClose, isMobile }) {
   const panelStyle = isMobile
     ? {
@@ -242,7 +383,6 @@ function DetailDrawer({ user, onClose, isMobile }) {
           </div>
         )}
 
-        {/* Header with close button */}
         <div style={{
           display: "flex",
           alignItems: "center",
@@ -268,20 +408,9 @@ function DetailDrawer({ user, onClose, isMobile }) {
               justifyContent: "center",
               cursor: "pointer",
               flexShrink: 0,
-              transition: "all .2s",
             }}
-            onMouseEnter={(e) => { e.target.style.background = "#f9fafb"; }}
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18" />
               <line x1="6" y1="6" x2="18" y2="18" />
             </svg>
@@ -296,26 +425,16 @@ function DetailDrawer({ user, onClose, isMobile }) {
           flexDirection: "column",
           gap: 20,
         }}>
-          {/* Profile Section */}
           <div style={{
             textAlign: "center",
             paddingBottom: 20,
             borderBottom: "1px solid #f3f4f6",
           }}>
             <Avatar name={user.name} url={user.avatar_url} size={80} />
-            <h2 style={{
-              fontSize: 18,
-              fontWeight: 700,
-              color: "#1f2937",
-              margin: "12px 0 4px 0",
-            }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: "#1f2937", margin: "12px 0 4px 0" }}>
               {user.name}
             </h2>
-            <p style={{
-              fontSize: 13,
-              color: "#9ca3af",
-              margin: "0 0 8px 0",
-            }}>
+            <p style={{ fontSize: 13, color: "#9ca3af", margin: "0 0 8px 0" }}>
               {user.email}
             </p>
             <div style={{
@@ -331,22 +450,17 @@ function DetailDrawer({ user, onClose, isMobile }) {
             </div>
           </div>
 
-          {/* Information Section */}
           <section>
-            <p style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#9ca3af",
-              margin: "0 0 12px 0",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", margin: "0 0 12px 0", textTransform: "uppercase" }}>
               Contact Information
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
                 { label: "Email", value: user.email },
                 { label: "Phone", value: user.phone },
+                { label: "Address", value: user.adresse },
+                { label: "Neighborhood", value: user.quartier_nom },
+                { label: "Wilaya", value: user.quartier_wilaya },
               ].map(({ label, value }) => (
                 <div key={label} style={{
                   display: "flex",
@@ -356,21 +470,10 @@ function DetailDrawer({ user, onClose, isMobile }) {
                   border: "1px solid #e5e7eb",
                   borderRadius: 8,
                 }}>
-                  <p style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "#9ca3af",
-                    margin: 0,
-                    textTransform: "uppercase",
-                  }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", margin: 0, textTransform: "uppercase" }}>
                     {label}
                   </p>
-                  <p style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "#374151",
-                    margin: 0,
-                  }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "#374151", margin: 0 }}>
                     {value || "—"}
                   </p>
                 </div>
@@ -378,22 +481,16 @@ function DetailDrawer({ user, onClose, isMobile }) {
             </div>
           </section>
 
-          {/* Statistics Section */}
           <section>
-            <p style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#9ca3af",
-              margin: "0 0 12px 0",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", margin: "0 0 12px 0", textTransform: "uppercase" }}>
               Account Statistics
             </p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
               {[
-                { label: "Role", value: user.role || "User" },
-                { label: "Verified", value: user.is_verified === 1 ? "Yes" : "No" },
+                { label: "Role", value: user.is_food_saver === 1 ? "Food Saver" : "User" },
+                { label: "Points", value: user.points || 0 },
+                { label: "Stars", value: user.stars || 0 },
+                { label: "Search Distance", value: user.search_distance ? `${user.search_distance}m` : "—" },
               ].map(({ label, value }) => (
                 <div key={label} style={{
                   padding: "10px 12px",
@@ -401,21 +498,10 @@ function DetailDrawer({ user, onClose, isMobile }) {
                   border: "1px solid #e5e7eb",
                   borderRadius: 8,
                 }}>
-                  <p style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "#9ca3af",
-                    margin: "0 0 4px 0",
-                    textTransform: "uppercase",
-                  }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", margin: "0 0 4px 0", textTransform: "uppercase" }}>
                     {label}
                   </p>
-                  <p style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "#374151",
-                    margin: 0,
-                  }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "#374151", margin: 0 }}>
                     {value}
                   </p>
                 </div>
@@ -423,32 +509,41 @@ function DetailDrawer({ user, onClose, isMobile }) {
             </div>
           </section>
 
-          {/* Dates Section */}
+          {(user.allergies?.length > 0 || user.dietary_restrictions?.length > 0) && (
+            <section>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", margin: "0 0 8px 0", textTransform: "uppercase" }}>
+                Dietary Info
+              </p>
+              {user.allergies?.length > 0 && (
+                <div style={{ marginBottom: 8 }}>
+                  <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 4px 0" }}>Allergies:</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {user.allergies.map((a, i) => (
+                      <span key={i} style={{ fontSize: 11, padding: "2px 8px", background: "#fee2e2", color: "#991b1b", borderRadius: 12 }}>{a}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {user.dietary_restrictions?.length > 0 && (
+                <div>
+                  <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 4px 0" }}>Dietary Restrictions:</p>
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                    {user.dietary_restrictions.map((d, i) => (
+                      <span key={i} style={{ fontSize: 11, padding: "2px 8px", background: "#dcfce7", color: "#166534", borderRadius: 12 }}>{d}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
           <section>
-            <p style={{
-              fontSize: 11,
-              fontWeight: 700,
-              color: "#9ca3af",
-              margin: "0 0 12px 0",
-              textTransform: "uppercase",
-              letterSpacing: "0.05em",
-            }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#9ca3af", margin: "0 0 12px 0", textTransform: "uppercase" }}>
               Account Timeline
             </p>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {[
-                {
-                  label: "Joined",
-                  value: user.created_at
-                    ? new Date(user.created_at).toLocaleDateString()
-                    : "—",
-                },
-                {
-                  label: "Last Active",
-                  value: user.updated_at
-                    ? new Date(user.updated_at).toLocaleDateString()
-                    : "—",
-                },
+                { label: "Birth Date", value: user.birth_date ? new Date(user.birth_date).toLocaleDateString() : "—" },
               ].map(({ label, value }) => (
                 <div key={label} style={{
                   display: "flex",
@@ -458,61 +553,26 @@ function DetailDrawer({ user, onClose, isMobile }) {
                   border: "1px solid #e5e7eb",
                   borderRadius: 8,
                 }}>
-                  <p style={{
-                    fontSize: 11,
-                    fontWeight: 600,
-                    color: "#9ca3af",
-                    margin: 0,
-                    textTransform: "uppercase",
-                  }}>
+                  <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", margin: 0, textTransform: "uppercase" }}>
                     {label}
                   </p>
-                  <p style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: "#374151",
-                    margin: 0,
-                  }}>
+                  <p style={{ fontSize: 13, fontWeight: 500, color: "#374151", margin: 0 }}>
                     {value}
                   </p>
                 </div>
               ))}
             </div>
           </section>
-
-          {user.bio && (
-            <section>
-              <p style={{
-                fontSize: 11,
-                fontWeight: 700,
-                color: "#9ca3af",
-                margin: "0 0 8px 0",
-                textTransform: "uppercase",
-              }}>
-                Bio
-              </p>
-              <p style={{
-                fontSize: 13,
-                lineHeight: 1.6,
-                color: "#374151",
-                margin: 0,
-                padding: "10px 12px",
-                background: "#f9fafb",
-                borderRadius: 8,
-              }}>
-                {user.bio}
-              </p>
-            </section>
-          )}
         </div>
       </div>
     </>
   );
 }
 
-// ── Mobile Card ─────────────────────────────────────────────────────────
-function MobileUserCard({ user, idx, onView }) {
+// ── Mobile User Card ────────────────────────────────────────────────────────
+function MobileUserCard({ user, onView, onSuspend, onResume, onDelete, actionLoading }) {
   const isActive = user.is_active === 1;
+  const busy = actionLoading === user.user_id;
 
   return (
     <div style={{
@@ -526,27 +586,12 @@ function MobileUserCard({ user, idx, onView }) {
     }}>
       <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "space-between" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <Avatar name={user.first_name || user.name} url={user.avatar_url} size={40} />
+          <Avatar name={user.name} url={user.avatar_url} size={40} />
           <div style={{ minWidth: 0 }}>
-            <p style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: "#1f2937",
-              margin: 0,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-            }}>
-              {user.first_name && user.last_name
-                ? `${user.first_name} ${user.last_name}`
-                : user.name || "User"}
+            <p style={{ fontSize: 14, fontWeight: 600, color: "#1f2937", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {user.name || "User"}
             </p>
-            <p style={{
-              fontSize: 11,
-              color: "#9ca3af",
-              marginTop: 2,
-              margin: 0,
-            }}>
+            <p style={{ fontSize: 11, color: "#9ca3af", marginTop: 2, margin: 0 }}>
               {user.email}
             </p>
           </div>
@@ -555,25 +600,16 @@ function MobileUserCard({ user, idx, onView }) {
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
         {[
-          { label: "Role", value: user.role },
+          { label: "Role", value: user.is_food_saver === 1 ? "Food Saver" : "User" },
           { label: "Status", value: isActive ? "Active" : "Suspended" },
+          { label: "Neighborhood", value: user.quartier_nom || "—" },
+          { label: "Points", value: user.points || 0 },
         ].map(({ label, value }) => (
           <div key={label}>
-            <p style={{
-              fontSize: 10,
-              fontWeight: 600,
-              color: "#9ca3af",
-              margin: "0 0 2px 0",
-              textTransform: "uppercase",
-            }}>
+            <p style={{ fontSize: 10, fontWeight: 600, color: "#9ca3af", margin: "0 0 2px 0", textTransform: "uppercase" }}>
               {label}
             </p>
-            <p style={{
-              fontSize: 12,
-              fontWeight: 500,
-              color: "#374151",
-              margin: 0,
-            }}>
+            <p style={{ fontSize: 12, fontWeight: 500, color: "#374151", margin: 0 }}>
               {value || "—"}
             </p>
           </div>
@@ -592,9 +628,7 @@ function MobileUserCard({ user, idx, onView }) {
           fontSize: 12,
           fontWeight: 600,
           cursor: "pointer",
-          transition: "all .2s",
         }}
-        onMouseEnter={(e) => e.target.style.background = "#f9fafb"}
       >
         View Details
       </button>
@@ -602,7 +636,38 @@ function MobileUserCard({ user, idx, onView }) {
   );
 }
 
-// ── Main Page ──────────────────────────────────────────────────────────
+// ── Icon Button ─────────────────────────────────────────────────────────────
+function IconBtn({ onClick, disabled, title, borderColor, bgColor, bgHover, color, children }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      title={title}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: 6,
+        border: `1px solid ${borderColor}`,
+        background: hovered && !disabled ? bgHover : bgColor,
+        color,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        cursor: disabled ? "not-allowed" : "pointer",
+        transition: "background .15s",
+        opacity: disabled ? 0.5 : 1,
+        flexShrink: 0,
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ── Main Page ──────────────────────────────────────────────────────────────
 export default function UsersPage() {
   const router = useRouter();
   const [users, setUsers] = useState([]);
@@ -610,12 +675,13 @@ export default function UsersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState("first_name");
+  const [sortKey, setSortKey] = useState("name");
   const [sortDir, setSortDir] = useState("asc");
   const [detailTarget, setDetailTarget] = useState(null);
   const [toast, setToast] = useState(null);
   const [actionLoading, setActionLoading] = useState(null);
   const [confirmModal, setConfirmModal] = useState(null);
+  const [suspensionModal, setSuspensionModal] = useState(null);
   const [windowWidth, setWindowWidth] = useState(
     typeof window !== "undefined" ? window.innerWidth : 1200
   );
@@ -647,28 +713,33 @@ export default function UsersPage() {
       const res = await fetch(`${BASE_URL}/admin/users`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (!res.ok) throw new Error("Failed to fetch users");
+
+      if (res.status === 401) {
+        localStorage.clear();
+        sessionStorage.clear();
+        router.push("/LoginScreen");
+        return;
+      }
+
+      if (!res.ok) throw new Error(`Failed to fetch users: ${res.status}`);
+
       const data = await res.json();
-      
-      console.log("API Response:", data);
-      
-      // Handle different API response formats
+
       let usersList = [];
-      if (Array.isArray(data)) {
-        usersList = data;
-      } else if (data.users && Array.isArray(data.users)) {
+      if (data.users && Array.isArray(data.users)) {
         usersList = data.users;
+      } else if (Array.isArray(data)) {
+        usersList = data;
       } else if (data.data && Array.isArray(data.data)) {
         usersList = data.data;
-      } else if (data.user && Array.isArray(data.user)) {
-        usersList = data.user;
-      } else {
-        console.warn("Unexpected data format:", data);
-        usersList = [];
       }
-      
-      console.log("Extracted users:", usersList);
-      setUsers(usersList || []);
+
+      usersList = usersList.map(user => ({
+        ...user,
+        user_id: user.user_id || user.id
+      }));
+
+      setUsers(usersList);
     } catch (err) {
       setError(err.message || "Failed to load users");
       showToast("Failed to load users", "error");
@@ -687,16 +758,44 @@ export default function UsersPage() {
       const q = search.toLowerCase();
       list = list.filter(
         (u) =>
-          (u.first_name?.toLowerCase().includes(q)) ||
-          (u.last_name?.toLowerCase().includes(q)) ||
-          (u.name?.toLowerCase().includes(q)) ||
-          (u.email?.toLowerCase().includes(q)) ||
-          (u.phone?.toLowerCase().includes(q))
+          u.name?.toLowerCase().includes(q) ||
+          u.email?.toLowerCase().includes(q) ||
+          u.phone?.toLowerCase().includes(q) ||
+          u.adresse?.toLowerCase().includes(q) ||
+          u.quartier_nom?.toLowerCase().includes(q)
       );
     }
     list.sort((a, b) => {
-      const aVal = String(a[sortKey] || a.first_name || a.name || "").toLowerCase();
-      const bVal = String(b[sortKey] || b.first_name || b.name || "").toLowerCase();
+      let aVal, bVal;
+      if (sortKey === "name") {
+        aVal = String(a.name || "").toLowerCase();
+        bVal = String(b.name || "").toLowerCase();
+      } else if (sortKey === "email") {
+        aVal = String(a.email || "").toLowerCase();
+        bVal = String(b.email || "").toLowerCase();
+      } else if (sortKey === "phone") {
+        aVal = String(a.phone || "").toLowerCase();
+        bVal = String(b.phone || "").toLowerCase();
+      } else if (sortKey === "status") {
+        aVal = a.is_active === 1 ? "active" : "suspended";
+        bVal = b.is_active === 1 ? "active" : "suspended";
+      } else if (sortKey === "points") {
+        const pA = Number(a.points || 0);
+        const pB = Number(b.points || 0);
+        return sortDir === "asc" ? pA - pB : pB - pA;
+      } else if (sortKey === "stars") {
+        const sA = Number(a.stars || 0);
+        const sB = Number(b.stars || 0);
+        return sortDir === "asc" ? sA - sB : sB - sA;
+      } else if (sortKey === "location") {
+        const locA = [a.quartier_nom, a.quartier_wilaya].filter(Boolean).join(", ");
+        const locB = [b.quartier_nom, b.quartier_wilaya].filter(Boolean).join(", ");
+        aVal = locA.toLowerCase();
+        bVal = locB.toLowerCase();
+      } else {
+        aVal = String(a[sortKey] || "").toLowerCase();
+        bVal = String(b[sortKey] || "").toLowerCase();
+      }
       return sortDir === "asc" ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
     });
     setFiltered(list);
@@ -710,31 +809,82 @@ export default function UsersPage() {
     }
   };
 
+  const getUserLabel = (userId) => {
+    const user = users.find((u) => u.user_id === userId);
+    return user?.name || user?.email || "this user";
+  };
+
   const handleSuspendUser = (userId) => {
-    const user = users.find(u => u.id === userId);
-    setConfirmModal({
-      type: "suspend",
+    setSuspensionModal({
       userId,
       title: "Suspend User Account",
-      message: `Are you sure you want to suspend ${user?.first_name || user?.name}? They will be unable to access their account until reactivated.`,
-      confirmText: "Suspend Account",
-      cancelText: "Cancel",
-      isDanger: true,
-      icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M6 9l12 0M9 5h6M10 14h4M8 19h8a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z" />
-        </svg>
-      ),
+      message: `Please provide a reason for suspending ${getUserLabel(userId)}.`
     });
   };
 
+  const executeSuspendAction = async (userId, reason) => {
+    const token = getToken();
+    if (!token) {
+      showToast("Session expired. Please login again.", "error");
+      router.push("/LoginScreen");
+      return;
+    }
+
+    setActionLoading(userId);
+
+    try {
+      const res = await fetch(`${BASE_URL}/admin/deactivate/${userId}`, {
+        method: "PATCH",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ reason: reason }),
+      });
+
+      if (res.status === 401) {
+        localStorage.clear();
+        sessionStorage.clear();
+        router.push("/LoginScreen");
+        throw new Error("Session expired. Please login again.");
+      }
+
+      let data = {};
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        try { data = await res.json(); } catch { /* ignore */ }
+      } else {
+        const text = await res.text();
+        data = { message: text || res.statusText };
+      }
+
+      if (!res.ok) {
+        throw new Error(data.message || data.error || data.msg || `HTTP ${res.status}: ${res.statusText}`);
+      }
+
+      // Optimistic state update
+      setUsers((prev) =>
+        prev.map((u) => (u.user_id === userId ? { ...u, is_active: 0 } : u))
+      );
+      if (detailTarget?.user_id === userId)
+        setDetailTarget((prev) => ({ ...prev, is_active: 0 }));
+      showToast("User suspended successfully", "success");
+
+      setSuspensionModal(null);
+    } catch (err) {
+      console.error("Suspend error:", err);
+      showToast(err.message || "Failed to suspend user. Please try again.", "error");
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   const handleResumeUser = (userId) => {
-    const user = users.find(u => u.id === userId);
     setConfirmModal({
       type: "resume",
       userId,
       title: "Reactivate User Account",
-      message: `Are you sure you want to reactivate ${user?.first_name || user?.name}? They will regain access to their account.`,
+      message: `Are you sure you want to reactivate ${getUserLabel(userId)}? They will regain full access to their account.`,
       confirmText: "Reactivate Account",
       cancelText: "Cancel",
       isDanger: false,
@@ -747,12 +897,11 @@ export default function UsersPage() {
   };
 
   const handleDeleteUser = (userId) => {
-    const user = users.find(u => u.id === userId);
     setConfirmModal({
       type: "delete",
       userId,
       title: "Delete User Account Permanently",
-      message: `This will permanently delete ${user?.first_name || user?.name}'s account and all associated data. This action cannot be undone.`,
+      message: `This will permanently delete ${getUserLabel(userId)}'s account and all associated data. This action cannot be undone.`,
       confirmText: "Delete Permanently",
       cancelText: "Cancel",
       isDanger: true,
@@ -772,83 +921,70 @@ export default function UsersPage() {
 
     const token = getToken();
     if (!token) {
-      showToast("No token found. Please login again.", "error");
+      showToast("Session expired. Please login again.", "error");
+      router.push("/LoginScreen");
       return;
     }
 
-    setActionLoading(confirmModal.userId);
-    try {
-      let endpoint = "";
-      let method = "PATCH";
+    const { type, userId } = confirmModal;
+    setActionLoading(userId);
 
-      if (confirmModal.type === "suspend") {
-        endpoint = `${BASE_URL}/admin/deactivate/${confirmModal.userId}`;
-      } else if (confirmModal.type === "resume") {
-        endpoint = `${BASE_URL}/admin/activate/${confirmModal.userId}`;
-      } else if (confirmModal.type === "delete") {
-        endpoint = `${BASE_URL}/admin/delete/${confirmModal.userId}`;
+    try {
+      let url = "";
+      let method = "";
+
+      if (type === "resume") {
+        url = `${BASE_URL}/admin/activate/${userId}`;
+        method = "PATCH";
+      } else if (type === "delete") {
+        url = `${BASE_URL}/admin/delete/${userId}`;
         method = "DELETE";
       }
 
-      console.log(`Making ${method} request to: ${endpoint}`);
-
-      const res = await fetch(endpoint, {
+      const res = await fetch(url, {
         method,
         headers: {
           Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
         },
-        body: confirmModal.type === "suspend" ? JSON.stringify({ reason: "Account suspended by administrator" }) : null,
       });
 
-      console.log(`Response status: ${res.status}`);
-      
-      const contentType = res.headers.get("content-type");
-      let data = {};
+      if (res.status === 401) {
+        localStorage.clear();
+        sessionStorage.clear();
+        router.push("/LoginScreen");
+        throw new Error("Session expired. Please login again.");
+      }
 
-      // Check if response is JSON
-      if (contentType && contentType.includes("application/json")) {
-        data = await res.json();
+      let data = {};
+      const ct = res.headers.get("content-type") || "";
+      if (ct.includes("application/json")) {
+        try { data = await res.json(); } catch { /* ignore */ }
       } else {
         const text = await res.text();
-        console.error("Non-JSON response:", text.substring(0, 300));
-        
-        if (res.status === 401) {
-          throw new Error("Unauthorized: Your token has expired. Please login again.");
-        } else if (res.status === 404) {
-          throw new Error("Endpoint not found. Your backend may not have implemented this feature yet.");
-        } else if (res.status === 500) {
-          throw new Error("Server error. Please contact your backend team.");
-        } else {
-          throw new Error(`Server returned ${res.status}: ${res.statusText}`);
-        }
+        data = { message: text || res.statusText };
       }
 
       if (!res.ok) {
-        const errorMsg = data.error || data.message || data.msg || `HTTP ${res.status}: ${res.statusText}`;
-        throw new Error(errorMsg);
+        throw new Error(data.message || data.error || data.msg || `HTTP ${res.status}: ${res.statusText}`);
       }
 
-      if (confirmModal.type === "delete") {
-        setUsers((prev) => prev.filter((u) => u.id !== confirmModal.userId));
-        setDetailTarget(null);
+      if (type === "delete") {
+        setUsers((prev) => prev.filter((u) => u.user_id !== userId));
+        if (detailTarget?.user_id === userId) setDetailTarget(null);
         showToast("User account deleted successfully", "success");
-      } else if (confirmModal.type === "suspend") {
+      } else if (type === "resume") {
         setUsers((prev) =>
-          prev.map((u) => (u.id === confirmModal.userId ? { ...u, is_active: 0 } : u))
+          prev.map((u) => (u.user_id === userId ? { ...u, is_active: 1 } : u))
         );
-        showToast("User suspended successfully", "success");
-      } else if (confirmModal.type === "resume") {
-        setUsers((prev) =>
-          prev.map((u) => (u.id === confirmModal.userId ? { ...u, is_active: 1 } : u))
-        );
+        if (detailTarget?.user_id === userId)
+          setDetailTarget((prev) => ({ ...prev, is_active: 1 }));
         showToast("User reactivated successfully", "success");
       }
 
       setConfirmModal(null);
     } catch (err) {
-      console.error("Error details:", err);
-      showToast(err.message || "Operation failed", "error");
+      console.error("Action error:", err);
+      showToast(err.message || "Operation failed. Please try again.", "error");
     } finally {
       setActionLoading(null);
     }
@@ -858,6 +994,9 @@ export default function UsersPage() {
     { key: "name", label: "Name" },
     { key: "email", label: "Email" },
     { key: "phone", label: "Phone" },
+    { key: "location", label: "Location" },
+    { key: "points", label: "Points" },
+    { key: "stars", label: "Rating" },
     { key: "status", label: "Status" },
   ];
 
@@ -907,6 +1046,7 @@ export default function UsersPage() {
         * { -webkit-tap-highlight-color: transparent; box-sizing: border-box; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes toastIn { from{opacity:0;transform:translateY(-10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         .users-tr:hover td { background:#f9fafb !important; }
         .users-search:focus { border-color:#3b82f6 !important; outline:none; }
         @media (prefers-reduced-motion: no-preference) {
@@ -915,6 +1055,15 @@ export default function UsersPage() {
       `}</style>
 
       <div style={{ fontFamily: "system-ui, -apple-system, sans-serif", width: "100%", maxWidth: isDesktop ? 1200 : "100%" }}>
+        {suspensionModal && (
+          <SuspensionReasonModal
+            title={suspensionModal.title}
+            message={suspensionModal.message}
+            loading={actionLoading === suspensionModal.userId}
+            onConfirm={(reason) => executeSuspendAction(suspensionModal.userId, reason)}
+            onCancel={() => setSuspensionModal(null)}
+          />
+        )}
 
         {confirmModal && (
           <ConfirmModal
@@ -991,9 +1140,7 @@ export default function UsersPage() {
                 fontSize: 12,
                 fontWeight: 500,
                 cursor: "pointer",
-                transition: "all .2s",
               }}
-              onMouseEnter={(e) => { e.target.style.background = "#f9fafb"; }}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <polyline points="23 4 23 10 17 10" />
@@ -1011,6 +1158,7 @@ export default function UsersPage() {
             top: "50%",
             transform: "translateY(-50%)",
             color: "#9ca3af",
+            pointerEvents: "none",
           }}>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <circle cx="11" cy="11" r="8" />
@@ -1021,7 +1169,7 @@ export default function UsersPage() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search users by name, email, phone…"
+            placeholder="Search users by name, email, phone, address or neighborhood…"
             className="users-search"
             style={{
               width: "100%",
@@ -1050,10 +1198,7 @@ export default function UsersPage() {
                 height: 18,
                 borderRadius: "50%",
                 background: "none",
-                borderTopWidth: 0,
-                borderLeftWidth: 0,
-                borderRightWidth: 0,
-                borderBottomWidth: 0,
+                border: "none",
                 color: "#9ca3af",
                 display: "flex",
                 alignItems: "center",
@@ -1069,6 +1214,7 @@ export default function UsersPage() {
           )}
         </div>
 
+        {/* Desktop Table */}
         {!isMobile && (
           <div style={{
             borderRadius: 10,
@@ -1080,14 +1226,7 @@ export default function UsersPage() {
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead style={{ background: "#f9fafb", borderBottom: "1px solid #e5e7eb" }}>
                 <tr>
-                  <th style={{
-                    padding: "12px 16px",
-                    textAlign: "center",
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: "#9ca3af",
-                    fontFamily: "system-ui",
-                  }}>
+                  <th style={{ padding: "12px 16px", textAlign: "center", fontSize: 12, fontWeight: 500, color: "#9ca3af", fontFamily: "system-ui" }}>
                     #
                   </th>
                   {desktopColumns.map((col) => (
@@ -1095,14 +1234,7 @@ export default function UsersPage() {
                       {col.label}
                     </TH>
                   ))}
-                  <th style={{
-                    padding: "12px 16px",
-                    textAlign: "right",
-                    fontSize: 12,
-                    fontWeight: 500,
-                    color: "#6b7280",
-                    fontFamily: "system-ui",
-                  }}>
+                  <th style={{ padding: "12px 16px", textAlign: "right", fontSize: 12, fontWeight: 500, color: "#6b7280", fontFamily: "system-ui" }}>
                     Actions
                   </th>
                 </tr>
@@ -1111,7 +1243,7 @@ export default function UsersPage() {
               <tbody>
                 {loading && [...Array(6)].map((_, i) => (
                   <tr key={i} style={{ borderBottom: "1px solid #e5e7eb" }}>
-                    {[36, 140, 180, 100, 60].map((w, j) => (
+                    {[36, 140, 180, 100, 140, 60, 80, 60, 100].map((w, j) => (
                       <td key={j} style={{ padding: "12px 16px" }}>
                         <div style={{
                           height: 12,
@@ -1127,7 +1259,7 @@ export default function UsersPage() {
 
                 {!loading && !error && filtered.length === 0 && (
                   <tr>
-                    <td colSpan={6} style={{ padding: "60px 24px", textAlign: "center" }}>
+                    <td colSpan={9} style={{ padding: "60px 24px", textAlign: "center" }}>
                       <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>
                         {search ? "No users match your search" : "No users found"}
                       </p>
@@ -1137,70 +1269,64 @@ export default function UsersPage() {
 
                 {!loading && !error && filtered.map((user, idx) => {
                   const isActive = user.is_active === 1;
+                  const displayName = user.name || user.email || "User";
+                  const busy = actionLoading === user.user_id;
 
                   return (
-                    <tr key={user.id} className="users-tr" style={{
-                      borderBottom: "1px solid #e5e7eb",
-                      transition: "all .2s",
-                    }}>
-                      <td style={{
-                        padding: "12px 16px",
-                        textAlign: "center",
-                        color: "#9ca3af",
-                        fontSize: 12,
-                      }}>
+                    <tr key={user.user_id} className="users-tr" style={{ borderBottom: "1px solid #e5e7eb", transition: "background .15s" }}>
+                      <td style={{ padding: "12px 16px", textAlign: "center", color: "#9ca3af", fontSize: 12 }}>
                         {String(idx + 1).padStart(2, "0")}
                       </td>
 
                       <td style={{ padding: "12px 16px" }}>
-                        <div style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 8,
-                          minWidth: 0,
-                        }}>
-                          <Avatar name={user.first_name || user.name} url={user.avatar_url} size={28} />
-                          <p style={{
-                            fontSize: 13,
-                            fontWeight: 500,
-                            color: "#1f2937",
-                            margin: 0,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}>
-                            {user.first_name && user.last_name
-                              ? `${user.first_name} ${user.last_name}`
-                              : user.name || user.email}
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                          <Avatar name={user.name} url={user.avatar_url} size={28} />
+                          <p style={{ fontSize: 13, fontWeight: 500, color: "#1f2937", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {displayName}
                           </p>
                         </div>
                       </td>
 
-                      <td style={{
-                        padding: "12px 16px",
-                        fontSize: 13,
-                        color: "#374151",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                        maxWidth: 200,
-                      }}>
+                      <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 200 }}>
                         {user.email || "—"}
                       </td>
 
-                      <td style={{
-                        padding: "12px 16px",
-                        fontSize: 13,
-                        color: "#374151",
-                      }}>
+                      <td style={{ padding: "12px 16px", fontSize: 13, color: "#374151" }}>
                         {user.phone || "—"}
                       </td>
 
-                      <td style={{
-                        padding: "12px 16px",
-                        fontSize: 13,
-                        color: "#374151",
-                      }}>
+                      <td style={{ padding: "12px 16px", fontSize: 13, color: "#4b5563" }}>
+                        {[user.quartier_nom, user.quartier_wilaya].filter(Boolean).join(", ") || "—"}
+                      </td>
+
+                      <td style={{ padding: "12px 16px" }}>
+                        {user.points != null ? (
+                          <span style={{
+                            display: "inline-flex",
+                            alignItems: "center",
+                            gap: 4,
+                            fontSize: 12,
+                            fontWeight: 700,
+                            padding: "2px 8px",
+                            borderRadius: 12,
+                            background: "#e0e7ff",
+                            color: "#4f46e5",
+                          }}>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                            {user.points}
+                          </span>
+                        ) : (
+                          <span style={{ color: "#d1d5db", fontSize: 13 }}>—</span>
+                        )}
+                      </td>
+
+                      <td style={{ padding: "12px 16px" }}>
+                        <StarRating stars={user.stars || 0} />
+                      </td>
+
+                      <td style={{ padding: "12px 16px" }}>
                         <span style={{
                           padding: "4px 10px",
                           borderRadius: 6,
@@ -1213,114 +1339,69 @@ export default function UsersPage() {
                         </span>
                       </td>
 
-                      <td style={{ padding: "12px 16px", textAlign: "right" }}>
+                      <td style={{ padding: "12px 16px" }}>
                         <div style={{ display: "flex", alignItems: "center", justifyContent: "flex-end", gap: 6 }}>
-                          <button
+                          <IconBtn
                             onClick={() => setDetailTarget(user)}
-                            style={{
-                              width: 32,
-                              height: 32,
-                              borderRadius: 6,
-                              border: "1px solid #d1d5db",
-                              background: "#fff",
-                              color: "#6b7280",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              cursor: "pointer",
-                              transition: "all .2s",
-                            }}
-                            onMouseEnter={(e) => { e.target.style.background = "#f9fafb"; }}
                             title="View profile"
+                            borderColor="#d1d5db"
+                            bgColor="#fff"
+                            bgHover="#f9fafb"
+                            color="#6b7280"
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
                               <circle cx="12" cy="12" r="3" />
                             </svg>
-                          </button>
+                          </IconBtn>
 
                           {isActive ? (
-                            <button
-                              onClick={() => handleSuspendUser(user.id)}
-                              disabled={actionLoading === user.id}
+                            <IconBtn
+                              onClick={() => handleSuspendUser(user.user_id)}
+                              disabled={busy}
                               title="Suspend user"
-                              style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 6,
-                                border: "1px solid #fed7aa",
-                                background: "#fffbeb",
-                                color: "#92400e",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                cursor: actionLoading === user.id ? "not-allowed" : "pointer",
-                                transition: "all .2s",
-                                opacity: actionLoading === user.id ? 0.5 : 1,
-                              }}
-                              onMouseEnter={(e) => { if (actionLoading !== user.id) e.target.style.background = "#fed7aa"; }}
-                              onMouseLeave={(e) => { e.target.style.background = "#fffbeb"; }}
+                              borderColor="#fed7aa"
+                              bgColor="#fffbeb"
+                              bgHover="#fed7aa"
+                              color="#92400e"
                             >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                                <path d="M6 9l12 0M9 5h6M10 14h4M8 19h8a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2H8a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2z" />
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <circle cx="12" cy="12" r="10" />
+                                <line x1="4.93" y1="4.93" x2="19.07" y2="19.07" />
                               </svg>
-                            </button>
+                            </IconBtn>
                           ) : (
-                            <button
-                              onClick={() => handleResumeUser(user.id)}
-                              disabled={actionLoading === user.id}
+                            <IconBtn
+                              onClick={() => handleResumeUser(user.user_id)}
+                              disabled={busy}
                               title="Reactivate user"
-                              style={{
-                                width: 32,
-                                height: 32,
-                                borderRadius: 6,
-                                border: "1px solid #dcfce7",
-                                background: "#f0fdf4",
-                                color: "#166534",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                cursor: actionLoading === user.id ? "not-allowed" : "pointer",
-                                transition: "all .2s",
-                                opacity: actionLoading === user.id ? 0.5 : 1,
-                              }}
-                              onMouseEnter={(e) => { if (actionLoading !== user.id) e.target.style.background = "#dcfce7"; }}
-                              onMouseLeave={(e) => { e.target.style.background = "#f0fdf4"; }}
+                              borderColor="#dcfce7"
+                              bgColor="#f0fdf4"
+                              bgHover="#dcfce7"
+                              color="#166534"
                             >
-                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                                 <polyline points="20 6 9 17 4 12" />
                               </svg>
-                            </button>
+                            </IconBtn>
                           )}
 
-                          <button
-                            onClick={() => handleDeleteUser(user.id)}
-                            disabled={actionLoading === user.id}
+                          <IconBtn
+                            onClick={() => handleDeleteUser(user.user_id)}
+                            disabled={busy}
                             title="Delete user permanently"
-                            style={{
-                              width: 32,
-                              height: 32,
-                              borderRadius: 6,
-                              border: "1px solid #fecaca",
-                              background: "#fef2f2",
-                              color: "#dc2626",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              cursor: actionLoading === user.id ? "not-allowed" : "pointer",
-                              transition: "all .2s",
-                              opacity: actionLoading === user.id ? 0.5 : 1,
-                            }}
-                            onMouseEnter={(e) => { if (actionLoading !== user.id) e.target.style.background = "#fee2e2"; }}
-                            onMouseLeave={(e) => { e.target.style.background = "#fef2f2"; }}
+                            borderColor="#fecaca"
+                            bgColor="#fef2f2"
+                            bgHover="#fee2e2"
+                            color="#dc2626"
                           >
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                               <polyline points="3 6 5 6 21 6" />
                               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                               <line x1="10" y1="11" x2="10" y2="17" />
                               <line x1="14" y1="11" x2="14" y2="17" />
                             </svg>
-                          </button>
+                          </IconBtn>
                         </div>
                       </td>
                     </tr>
@@ -1328,39 +1409,6 @@ export default function UsersPage() {
                 })}
               </tbody>
             </table>
-
-            {!loading && error && (
-              <div style={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                padding: "60px 24px",
-                textAlign: "center",
-              }}>
-                <p style={{ fontSize: 16, fontWeight: 600, color: "#1f2937", margin: "0 0 8px 0" }}>
-                  Unable to load users
-                </p>
-                <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 16px 0" }}>{error}</p>
-                <button
-                  onClick={fetchUsers}
-                  style={{
-                    padding: "8px 16px",
-                    borderRadius: 6,
-                    borderTopWidth: 0,
-                    borderLeftWidth: 0,
-                    borderRightWidth: 0,
-                    borderBottomWidth: 0,
-                    background: "#3b82f6",
-                    color: "#fff",
-                    fontSize: 13,
-                    fontWeight: 600,
-                    cursor: "pointer",
-                  }}
-                >
-                  Try again
-                </button>
-              </div>
-            )}
 
             {!loading && !error && filtered.length > 0 && (
               <div style={{
@@ -1380,15 +1428,11 @@ export default function UsersPage() {
           </div>
         )}
 
+        {/* Mobile Cards */}
         {isMobile && (
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
             {loading && [...Array(4)].map((_, i) => (
-              <div key={i} style={{
-                background: "#fff",
-                border: "1px solid #e5e7eb",
-                borderRadius: 10,
-                padding: 14,
-              }}>
+              <div key={i} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 14 }}>
                 {[["100%", 14], ["70%", 11], ["50%", 10]].map(([w, h], j) => (
                   <div key={j} style={{
                     height: h,
@@ -1402,8 +1446,16 @@ export default function UsersPage() {
               </div>
             ))}
 
-            {!loading && !error && filtered.map((user, idx) => (
-              <MobileUserCard key={user.id} user={user} idx={idx} onView={(u) => setDetailTarget(u)} />
+            {!loading && !error && filtered.map((user) => (
+              <MobileUserCard
+                key={user.user_id}
+                user={user}
+                onView={(u) => setDetailTarget(u)}
+                onSuspend={handleSuspendUser}
+                onResume={handleResumeUser}
+                onDelete={handleDeleteUser}
+                actionLoading={actionLoading}
+              />
             ))}
 
             {!loading && !error && filtered.length === 0 && (
@@ -1425,10 +1477,7 @@ export default function UsersPage() {
                   style={{
                     padding: "8px 16px",
                     borderRadius: 6,
-                    borderTopWidth: 0,
-                    borderLeftWidth: 0,
-                    borderRightWidth: 0,
-                    borderBottomWidth: 0,
+                    border: "none",
                     background: "#3b82f6",
                     color: "#fff",
                     fontSize: 12,
