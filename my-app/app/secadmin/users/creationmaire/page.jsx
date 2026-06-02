@@ -6,10 +6,32 @@ import SecAdminLayout from "@/app/components/SecAdminLayout";
 
 const BASE_URL = "https://back-end-sawu.onrender.com";
 
-// ✅ FIX: token lu dans les handlers, pas au moment du render
 function getToken() {
   if (typeof window === "undefined") return null;
   return localStorage.getItem("accessToken") || sessionStorage.getItem("accessToken") || null;
+}
+
+function getStoredUser() {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = localStorage.getItem("user") || sessionStorage.getItem("user");
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Extract quartier_id from various user object shapes
+function extractQuartierId(user) {
+  if (!user) return null;
+  return (
+    user.quartier_id ||
+    user.quartierId ||
+    user.quartier?.id ||
+    user.admin_sec?.quartier_id ||
+    user.adminSec?.quartier_id ||
+    null
+  );
 }
 
 // ── Confirmation Modal ────────────────────────────────────────────────────────
@@ -41,14 +63,14 @@ function ConfirmModal({ title, message, confirmText, cancelText, onConfirm, onCa
   );
 }
 
-// ── Create Modal ──────────────────────────────────────────────────────────────
-function CreateModal({ onClose, onSubmit, loading }) {
+// ── Create Modal (quartier_id fixed & read-only) ───────────────────────────────
+function CreateModal({ onClose, onSubmit, loading, fixedQuartierId }) {
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     phone: "",
     wilaya: "",
-    quartier_id: "",
+    quartier_id: fixedQuartierId ?? "",
   });
 
   const handleChange = (e) => setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -57,6 +79,13 @@ function CreateModal({ onClose, onSubmit, loading }) {
   const inputStyle = {
     width: "100%", padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: 8,
     fontSize: 14, color: "#1f2937", background: "#f9fafb", fontFamily: "system-ui", outline: "none",
+  };
+  const readOnlyStyle = {
+    ...inputStyle,
+    background: "#f3f4f6",
+    color: "#6b7280",
+    cursor: "not-allowed",
+    border: "1px solid #e5e7eb",
   };
   const labelStyle = { display: "block", fontSize: 12, fontWeight: 600, color: "#374151", marginBottom: 6 };
   const groupStyle = { marginBottom: 16 };
@@ -96,9 +125,29 @@ function CreateModal({ onClose, onSubmit, loading }) {
               <label style={labelStyle}>Wilaya</label>
               <input required type="text" name="wilaya" value={formData.wilaya} onChange={handleChange} placeholder="ex. Alger" style={inputStyle} />
             </div>
+
             <div style={groupStyle}>
-              <label style={labelStyle}>ID de la commune</label>
-              <input required type="number" name="quartier_id" value={formData.quartier_id} onChange={handleChange} placeholder="ex. 55" style={inputStyle} />
+              <label style={labelStyle}>
+                ID de la commune
+                {fixedQuartierId != null && (
+                  <span style={{ marginLeft: 8, fontSize: 11, fontWeight: 500, color: "#3b82f6", background: "#eff6ff", padding: "2px 8px", borderRadius: 99, border: "1px solid #bfdbfe" }}>
+                    Assigné automatiquement
+                  </span>
+                )}
+              </label>
+              <input
+                readOnly={fixedQuartierId != null}
+                type="number"
+                name="quartier_id"
+                value={formData.quartier_id}
+                onChange={fixedQuartierId != null ? undefined : handleChange}
+                style={fixedQuartierId != null ? readOnlyStyle : inputStyle}
+              />
+              {fixedQuartierId != null && (
+                <p style={{ margin: "6px 0 0", fontSize: 12, color: "#6b7280" }}>
+                  Le maire sera créé pour votre quartier (ID&nbsp;{fixedQuartierId}).
+                </p>
+              )}
             </div>
           </form>
         </div>
@@ -121,7 +170,10 @@ function CreateModal({ onClose, onSubmit, loading }) {
 // ── Main Page ─────────────────────────────────────────────────────────────────
 export default function CreationMairePage() {
   const router = useRouter();
+  const [currentUser, setCurrentUser] = useState(null);
+  const [quartierId, setQuartierId] = useState(null);
   const [maires, setMaires] = useState([]);
+  const [myMaire, setMyMaire] = useState(null); // the maire belonging to this secadmin's quartier
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -135,6 +187,17 @@ export default function CreationMairePage() {
     setTimeout(() => setToast(null), 3500);
   };
 
+  // ── Load user & quartier_id from storage ────────────────────────────────────
+  useEffect(() => {
+    const token = getToken();
+    if (!token) { router.push("/LoginScreen"); return; }
+    const user = getStoredUser();
+    setCurrentUser(user);
+    const qid = extractQuartierId(user);
+    setQuartierId(qid);
+  }, [router]);
+
+  // ── Fetch all maires & filter the one belonging to this secadmin ─────────────
   const fetchMaires = async () => {
     const token = getToken();
     if (!token) { router.push("/LoginScreen"); return; }
@@ -142,18 +205,15 @@ export default function CreationMairePage() {
     setLoading(true);
     setError(null);
     try {
-      // ✅ Route correcte : GET /admin/maire
       const res = await fetch(`${BASE_URL}/admin/maire`, {
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // ✅ FIX: gestion du 401 explicite
       if (res.status === 401) { router.push("/LoginScreen"); return; }
       if (!res.ok) throw new Error(`Erreur ${res.status} — impossible de charger les maires`);
 
       const data = await res.json();
 
-      // Extraction flexible selon le format retourné
       let list = [];
       if (Array.isArray(data)) list = data;
       else if (Array.isArray(data.maires)) list = data.maires;
@@ -170,6 +230,18 @@ export default function CreationMairePage() {
 
   useEffect(() => { fetchMaires(); }, []);
 
+  // ── Derive myMaire whenever maires or quartierId changes ─────────────────────
+  useEffect(() => {
+    if (quartierId == null) { setMyMaire(null); return; }
+    const found = maires.find(
+      (m) =>
+        Number(m.quartier_id) === Number(quartierId) ||
+        Number(m.quartierId) === Number(quartierId) ||
+        Number(m.quartier?.id) === Number(quartierId)
+    );
+    setMyMaire(found || null);
+  }, [maires, quartierId]);
+
   // ── CREATE ──
   const handleCreate = async (formData) => {
     const token = getToken();
@@ -177,13 +249,12 @@ export default function CreationMairePage() {
 
     setCreateLoading(true);
     try {
-      // ✅ Route correcte : POST /admin/maire
       const payload = {
         name: formData.name,
         email: formData.email,
         phone: formData.phone,
         wilaya: formData.wilaya,
-        quartier_id: Number(formData.quartier_id),
+        quartier_id: quartierId != null ? Number(quartierId) : Number(formData.quartier_id),
       };
       const res = await fetch(`${BASE_URL}/admin/maire`, {
         method: "POST",
@@ -194,7 +265,6 @@ export default function CreationMairePage() {
         body: JSON.stringify(payload),
       });
 
-      // ✅ FIX: certaines APIs retournent 201 sans body JSON exploitable
       let data = {};
       const contentType = res.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
@@ -205,7 +275,7 @@ export default function CreationMairePage() {
 
       showToast("Maire créé avec succès !");
       setShowCreateModal(false);
-      fetchMaires(); // rafraîchit la liste
+      fetchMaires();
     } catch (err) {
       showToast(err.message, "error");
     } finally {
@@ -223,16 +293,13 @@ export default function CreationMairePage() {
 
     setDeleteLoading(true);
     try {
-      // ✅ Route correcte : DELETE /admin/maire/{id}
       const res = await fetch(`${BASE_URL}/admin/maire/${targetId}`, {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
 
-      // ✅ FIX: DELETE retourne souvent 204 No Content — ne pas appeler res.json()
       if (res.status === 401) { router.push("/LoginScreen"); return; }
       if (!res.ok) {
-        // essaie de lire un message d'erreur si disponible
         let errMsg = `Erreur ${res.status}`;
         try {
           const errData = await res.json();
@@ -241,7 +308,6 @@ export default function CreationMairePage() {
         throw new Error(errMsg);
       }
 
-      // Mise à jour optimiste de la liste sans re-fetch
       setMaires((prev) => prev.filter((m) => (m.user_id || m.id) !== targetId));
       setDeleteTarget(null);
       showToast("Maire supprimé avec succès !");
@@ -252,9 +318,12 @@ export default function CreationMairePage() {
     }
   };
 
-  // ── Render ──
+  // ── Helpers ──
   const getMaireName = (maire) =>
     maire.name || `${maire.first_name ?? ""} ${maire.last_name ?? ""}`.trim() || "Nom inconnu";
+
+  // A secadmin can only create a maire if none exists for their quartier yet
+  const canCreate = myMaire == null && !loading;
 
   return (
     <SecAdminLayout>
@@ -284,6 +353,7 @@ export default function CreationMairePage() {
           onClose={() => setShowCreateModal(false)}
           onSubmit={handleCreate}
           loading={createLoading}
+          fixedQuartierId={quartierId}
         />
       )}
 
@@ -305,29 +375,54 @@ export default function CreationMairePage() {
         {/* Header */}
         <div style={{ marginBottom: 30, display: "flex", alignItems: "flex-end", justifyContent: "space-between", flexWrap: "wrap", gap: 16 }}>
           <div>
-            <p style={{ fontSize: 13, color: "#6b7280", marginTop: 0, marginRight: 0, marginBottom: 8, marginLeft: 0, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-
+            <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 8px 0", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
               Dashboard / Maires
             </p>
-            <h1 style={{ fontSize: 32, fontWeight: 800, color: "#111827", marginTop: 0, marginRight: 0, marginBottom: 0, marginLeft: 0 }}>Collectivités Locales</h1>
-            <p style={{ fontSize: 14, color: "#6b7280", marginTop: 0, marginRight: 0, marginBottom: 16, marginLeft: 0 }}>Gérez les représentants des municipalités.</p>
+            <h1 style={{ fontSize: 32, fontWeight: 800, color: "#111827", margin: "0 0 4px 0" }}>Collectivités Locales</h1>
+            <p style={{ fontSize: 14, color: "#6b7280", margin: 0 }}>
+              Gérez le représentant de votre municipalité
+              {quartierId != null && (
+                <span style={{ marginLeft: 8, fontSize: 12, fontWeight: 600, color: "#3b82f6", background: "#eff6ff", padding: "2px 10px", borderRadius: 99, border: "1px solid #bfdbfe" }}>
+                  Quartier ID : {quartierId}
+                </span>
+              )}.
+            </p>
           </div>
 
-          <button
-            onClick={() => setShowCreateModal(true)}
-            style={{
-              background: "#3b82f6", color: "#fff", border: "none", padding: "12px 20px",
-              borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer",
-              boxShadow: "0 4px 12px rgba(59,130,246,0.3)", display: "flex", alignItems: "center", gap: 8,
-            }}
-            onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
-          >
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
-              <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            Créer un Maire
-          </button>
+          {/* Create button — only shown when no maire exists for this quartier */}
+          {canCreate && (
+            <button
+              onClick={() => setShowCreateModal(true)}
+              style={{
+                background: "#3b82f6", color: "#fff", border: "none", padding: "12px 20px",
+                borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: "pointer",
+                boxShadow: "0 4px 12px rgba(59,130,246,0.3)", display: "flex", alignItems: "center", gap: 8,
+                transition: "transform 0.15s ease",
+              }}
+              onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; }}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" />
+              </svg>
+              Créer un Maire
+            </button>
+          )}
+
+          {/* Info badge shown when a maire already exists */}
+          {myMaire != null && !loading && (
+            <div style={{
+              display: "flex", alignItems: "center", gap: 10,
+              background: "#ecfdf5", border: "1px solid #6ee7b7", borderRadius: 8,
+              padding: "10px 16px", fontSize: 13, color: "#065f46", fontWeight: 600,
+            }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <polyline points="9 12 11 14 15 10" />
+              </svg>
+              Votre quartier a déjà un maire. Supprimez-le pour en créer un nouveau.
+            </div>
+          )}
         </div>
 
         {/* Content */}
@@ -358,66 +453,88 @@ export default function CreationMairePage() {
             </div>
             <h3 style={{ fontSize: 18, fontWeight: 600, color: "#1f2937", margin: "0 0 8px 0" }}>Aucun maire trouvé</h3>
             <p style={{ fontSize: 14, color: "#6b7280", margin: "0 0 24px 0", maxWidth: 400, marginInline: "auto" }}>
-              Aucun maire n'est encore enregistré dans le système. Créez-en un pour commencer.
+              Aucun maire n&apos;est encore enregistré dans le système. Créez-en un pour commencer.
             </p>
           </div>
         ) : (
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))", gap: 20 }}>
-            {maires.map((maire) => (
-              <div
-                key={maire.id}
-                style={{
-                  background: "#fff", borderRadius: 12, border: "1px solid #e5e7eb",
-                  overflow: "hidden", display: "flex", flexDirection: "column",
-                  boxShadow: "0 1px 3px rgba(0,0,0,0.05)", transition: "all .2s",
-                }}
-                onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = "0 8px 24px rgba(0,0,0,0.08)"; }}
-                onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = "0 1px 3px rgba(0,0,0,0.05)"; }}
-              >
-                <div style={{ padding: 20, borderBottom: "1px solid #f3f4f6" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
-                    <div>
-                      {/* ✅ FIX: helper getMaireName gère tous les formats de nom */}
-                      <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: "0 0 4px 0" }}>
-                        {getMaireName(maire)}
-                      </h3>
-                      <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>{maire.email || "—"}</p>
-                    </div>
-                    <button
-                      onClick={() => setDeleteTarget(maire)}
-                      title="Supprimer ce maire"
-                      style={{
-                        background: "#fef2f2", color: "#ef4444", border: "1px solid #fecaca",
-                        width: 32, height: 32, borderRadius: 6, display: "flex", alignItems: "center",
-                        justifyContent: "center", cursor: "pointer", transition: "all .2s", flexShrink: 0,
-                      }}
-                      onMouseEnter={(e) => { e.currentTarget.style.background = "#fee2e2"; }}
-                      onMouseLeave={(e) => { e.currentTarget.style.background = "#fef2f2"; }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <polyline points="3 6 5 6 21 6" />
-                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      </svg>
-                    </button>
-                  </div>
-                </div>
+            {maires.map((maire) => {
+              // Highlight the maire belonging to the current secadmin's quartier
+              const isMyMaire =
+                quartierId != null && (
+                  Number(maire.quartier_id) === Number(quartierId) ||
+                  Number(maire.quartierId) === Number(quartierId) ||
+                  Number(maire.quartier?.id) === Number(quartierId)
+                );
 
-                <div style={{ padding: "16px 20px", background: "#f9fafb", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, flex: 1 }}>
-                  <div>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", margin: "0 0 4px 0" }}>Commune</p>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: "#374151", margin: 0 }}>{maire.commune || "—"}</p>
+              return (
+                <div
+                  key={maire.id}
+                  style={{
+                    background: "#fff",
+                    borderRadius: 12,
+                    border: isMyMaire ? "2px solid #3b82f6" : "1px solid #e5e7eb",
+                    overflow: "hidden", display: "flex", flexDirection: "column",
+                    boxShadow: isMyMaire ? "0 4px 20px rgba(59,130,246,0.12)" : "0 1px 3px rgba(0,0,0,0.05)",
+                    transition: "all .2s",
+                  }}
+                  onMouseEnter={(e) => { e.currentTarget.style.transform = "translateY(-2px)"; e.currentTarget.style.boxShadow = isMyMaire ? "0 8px 28px rgba(59,130,246,0.18)" : "0 8px 24px rgba(0,0,0,0.08)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.transform = "none"; e.currentTarget.style.boxShadow = isMyMaire ? "0 4px 20px rgba(59,130,246,0.12)" : "0 1px 3px rgba(0,0,0,0.05)"; }}
+                >
+                  <div style={{ padding: 20, borderBottom: "1px solid #f3f4f6" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                      <div>
+                        {isMyMaire && (
+                          <span style={{ display: "inline-block", marginBottom: 6, fontSize: 11, fontWeight: 700, color: "#3b82f6", background: "#eff6ff", padding: "2px 10px", borderRadius: 99, border: "1px solid #bfdbfe" }}>
+                            Votre Maire
+                          </span>
+                        )}
+                        <h3 style={{ fontSize: 16, fontWeight: 700, color: "#111827", margin: "0 0 4px 0" }}>
+                          {getMaireName(maire)}
+                        </h3>
+                        <p style={{ fontSize: 13, color: "#6b7280", margin: 0 }}>{maire.email || "—"}</p>
+                      </div>
+                      {/* Only the secadmin owning this quartier can delete its maire */}
+                      {isMyMaire && (
+                        <button
+                          onClick={() => setDeleteTarget(maire)}
+                          title="Supprimer ce maire"
+                          style={{
+                            background: "#fef2f2", color: "#ef4444", border: "1px solid #fecaca",
+                            width: 32, height: 32, borderRadius: 6, display: "flex", alignItems: "center",
+                            justifyContent: "center", cursor: "pointer", transition: "all .2s", flexShrink: 0,
+                          }}
+                          onMouseEnter={(e) => { e.currentTarget.style.background = "#fee2e2"; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.background = "#fef2f2"; }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </div>
-                  <div>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", margin: "0 0 4px 0" }}>Code Commune</p>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: "#374151", margin: 0 }}>{maire.code_commune || "—"}</p>
-                  </div>
-                  <div style={{ gridColumn: "1 / -1" }}>
-                    <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", margin: "0 0 4px 0" }}>Téléphone</p>
-                    <p style={{ fontSize: 13, fontWeight: 500, color: "#374151", margin: 0 }}>{maire.phone || "—"}</p>
+
+                  <div style={{ padding: "16px 20px", background: "#f9fafb", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, flex: 1 }}>
+                    <div>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", margin: "0 0 4px 0" }}>Commune</p>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "#374151", margin: 0 }}>{maire.commune || "—"}</p>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", margin: "0 0 4px 0" }}>Quartier ID</p>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "#374151", margin: 0 }}>
+                        {maire.quartier_id || maire.quartierId || maire.quartier?.id || "—"}
+                      </p>
+                    </div>
+                    <div style={{ gridColumn: "1 / -1" }}>
+                      <p style={{ fontSize: 11, fontWeight: 600, color: "#9ca3af", textTransform: "uppercase", margin: "0 0 4px 0" }}>Téléphone</p>
+                      <p style={{ fontSize: 13, fontWeight: 500, color: "#374151", margin: 0 }}>{maire.phone || "—"}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
